@@ -1,0 +1,68 @@
+name: Watch timetables
+
+# Daily check of the WR/CR suburban timetable pages for new or changed PDFs.
+# Changes become a PR (branch watch/<railway>); unreachable sources become an issue.
+# See watch/README.md.
+
+on:
+  schedule:
+    - cron: "30 1 * * *" # 07:00 IST
+  workflow_dispatch:
+    inputs:
+      forget:
+        description: "Testing: comma-separated substrings of PDF paths to treat as never seen ('*' = all). Opens a real PR."
+        required: false
+        default: ""
+
+permissions:
+  contents: write # push watch/<railway> branches
+  pull-requests: write
+  issues: write
+  actions: write # keepalive (re-enable this workflow)
+
+concurrency:
+  group: watch-timetables
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        railway: [wr, cr]
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Check ${{ matrix.railway }} pages
+        env:
+          FORGET: ${{ inputs.forget }}
+        run: python3 watch/watch.py "${{ matrix.railway }}" --out "$RUNNER_TEMP/out" --forget "$FORGET"
+
+      - name: Open or update PR / issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898299+github-actions[bot]@users.noreply.github.com"
+          bash watch/publish.sh "${{ matrix.railway }}" "$RUNNER_TEMP/out"
+
+      - name: Keep run output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: watch-${{ matrix.railway }}
+          path: ${{ runner.temp }}/out
+          retention-days: 14
+
+  keepalive:
+    # GitHub disables scheduled workflows after 60 days without repo activity;
+    # re-enabling through the API resets that timer without a commit.
+    needs: watch
+    if: always() && github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/watch-timetables.yml/enable"

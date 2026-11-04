@@ -1,0 +1,132 @@
+{
+  "pages": {
+    "cr-mumbai": {
+      "files": {
+        "/cris//uploads/files/1640859089146-ABBREVIATIONS.pdf": {
+          "etag": "W/\"522754-1640859089160\"",
+          "first_seen": "2026-11-05",
+          "last_modified": "Thu, 30 Dec 2021 10:11:29 GMT",
+          "length": 522754,
+          "name": "1640859089146-ABBREVIATIONS.pdf",
+          "sha256": "61186b0db2c445c8b5e068efbcd2287b8df827934f97e3dd9245934e50772d9d",
+          "title": "ABBREVIATIONS"
+        },
+        "/cris//uploads/files/1728294831372-SUB%20PTT%20DN%20ML'24.pdf": {
+          "etag": "W/\"516366-1728294831384\"",
+          "first_seen": "2026-11-05",
+          "last_modified": "Mon, 07 Oct 2024 09:53:51 GMT",
+          "length": 516366,
+          "name": "1728294831372-SUB PTT DN ML'24.pdf",
+          "sha256": "b5d8d8648af1c828b35d20920dc72ffb70f911b85585b9db711fd01a52b63c95",
+          "title": ""
+        },
+        "/cris//uploads/files/1728294891897-SUB%20PTT%20UP%20ML'24.pdf": {
+          "etag": "W/\"529623-1728294891910\"",
+          "first_seen": "2026-11-05",
+          "last_modified": "Mon, 07 Oct 2024 09:54:51 GMT",
+          "length": 529623,
+          "name": "1728294891897-SUB PTT UP ML'24.pdf",
+          "sha256": "68f5236a46352675c5f5067ac8c05614f982fa1c86b224eedb3af5e1c64ede2f",
+          "title": ""
+        },
+        "/cris//uploads/files/1763721416458-list%20of%20holidays%20for%20website.pdf": {
+          "etag": "W/\"77704-1763721416459\"",
+          "first_seen": "2026-11-05",
+          "last_modified": "Fri, 21 Nov 2025 10:36:56 GMT",
+          "length": 77704,
+          "name": "1763721416458-list of holidays for website.pdf",
+          "sha256": "22f2220419573626930e8591808a693bd9f240f018be95bc8a1044690c946958",
+          "title": "LIST OF HOLIDAYS ON WHICH TRAINS WILL RUN AS PER SUNDAY SCHEDULE."
+        },
+        "/cris//uploads/files/1770378640224-Suburban%20AC%20Services%20wef%2016.04.2025.pdf": {
+          "etag": "W/\"230378-1770378640230\"",
+          "first_seen": "2026-11-05",
+          "last_modified": "Fri, 06 Feb 2026 11:50:40 GMT",
+          "length": 230378,
+          "name": "1770378640224-Suburban AC Services wef 16.04.2025.pdf",
+          "sha256": "405440ab710ba8ceffe4f0ff6fc0dc2142c51da2921dbfc9c0058efe4e8f0074",
+          "title": "AC Services on Main Line w.e.f. 16.04.2025"
+        },
+        "/cris//uploads/files/1777550323377-DN%20HB%20REVISED%20PTT%20WEF%2001.05.2026.pdf": {
+          "etag": "W/\"183173-1777550323397\"",
+          "first_seen": "2026-11-05",
+          "last_modified": "Thu, 30 Apr 2026 11:58:43 GMT",
+          "length": 183173,
+          "name": "1777550323377-DN HB REVISED PTT WEF 01.05.2026.pdf",
+          "sha256": "7774ae4aacc1d0ccf5d07ce10f557c37fdcac0550385f7e856d6c934d97a8a78",
+          "title": ""
+        },
+        "/cris//uploads/files/1777550366723-UP%20HB%20REVISED%20PTT%20WEF%2001.05.2026.pdf": {
+          "etag": "W/\"271608-1777550366749\"",
+          "first_seen": "2026-11-05",
+          "last_modified": "Thu, 30 Apr 2026 11:59:26 GMT",
+          "length": 271608,
+          "name": "1777550366723-UP HB REVISED PTT WEF 01.05.2026.pdf",
+          "sha256": "a06d17e7c3173e1bebe51f9601a82abef427b8ba34b171ad9e86b577269e3664",
+          "title": ""
+        },
+        "/cris//uploads/files/1777550442158-HB%20AC%20PTT%20WEF%2001.05.2026%20(1).pdf": {
+          "etag": "W/\"107037-1777550442175\"",
+          "first_seen": "2026-11-05",
+          "last_modified": "Thu, 30 Apr 2026 12:00:42 GMT",
+          "length": 107037,
+          "name": "1777550442158-HB AC PTT WEF 01.05.2026 (1).pdf",
+          "sha256": "f8148949f167838c6c46933dbdf6a8913a9e64e45f844ec80411d6191d15fc4c",
+          "title": "AC Services on Harbour Line w.e.f 01.05.2026"
+        },
+        "/cris//uploads/files/1781160975368-PORT%20LINE%20PTT%20WEF%2015.12.2025.pdf": {
+          "etag": "W/\"158218-1781160975372\"",
+          "first_seen": "2026-11-05",
+          "last_modified": "Thu, 11 Jun 2026 06:56:15 GMT",
+          "length": 158218,
+          "name": "1781160975368-PORT LINE PTT WEF 15.12.2025.pdf",
+          "sha256": "b58b2d3f56881fef164b7bcba15e827af4d7ea16130fef52e88ce1beba8f31e8",
+          "title": ""
+        },
+        "/cris//uploads/files/1781174782507-THB%20PTT%20wef%20%20%2013.01.2024.pdf": {
+          "etag": "W/\"294684-1781174782515\"",
+          "first_seen": "2026-11-05",
+          "last_modified": "Thu, 11 Jun 2026 10:46:22 GMT",
+          "length": 294684,
+          "name": "1781174782507-THB PTT wef   13.01.2024.pdf",
+          "sha256": "e7aee5f9d2cfc55f09e9fc22f5e8ebb3f0fad08473e87b175db81d6789f89fee",
+          "title": ""
+        },
+        "/cris//uploads/files/1786691264142-PTT%20OF%2015%20CAR%20TT%20ON%20MAINLINE%20WEF%2015%20AUG%2026.pdf": {
+          "etag": "W/\"407964-1786691264153\"",
+          "first_seen": "2026-11-05",
+          "last_modified": "Fri, 14 Aug 2026 07:07:44 GMT",
+          "length": 407964,
+          "name": "1786691264142-PTT OF 15 CAR TT ON MAINLINE WEF 15 AUG 26.pdf",
+          "sha256": "15e93c4a214063a0e95275a91b43db78d8ff1beb316b109ffaffbcd1d48cd81c",
+          "title": "Main Line Suburban PTT with 15 Car rakes w.e.f. 15.08.2026"
+        }
+      },
+      "host": "oldcr.indianrailways.gov.in"
+    },
+    "cr-pune": {
+      "files": {
+        "/cris//uploads/files/1781160194413-PTT%20LNL-PUNE.pdf": {
+          "etag": "W/\"75870-1781160194416\"",
+          "first_seen": "2026-11-05",
+          "last_modified": "Thu, 11 Jun 2026 06:43:14 GMT",
+          "length": 75870,
+          "name": "1781160194413-PTT LNL-PUNE.pdf",
+          "sha256": "a5a9354ac395ce69964e454305e68c7ae5fbc724fef3e0286cccb37335fd5f94",
+          "title": ""
+        },
+        "/cris//uploads/files/1781160272318-PTT%20PUNE-LNL.pdf": {
+          "etag": "W/\"67102-1781160272321\"",
+          "first_seen": "2026-11-05",
+          "last_modified": "Thu, 11 Jun 2026 06:44:32 GMT",
+          "length": 67102,
+          "name": "1781160272318-PTT PUNE-LNL.pdf",
+          "sha256": "21b80e96ffd59e30d7b599704288c798376af8c0124151456d8ff8a7dddf6ca6",
+          "title": ""
+        }
+      },
+      "host": "oldcr.indianrailways.gov.in"
+    }
+  },
+  "railway": "cr"
+}

@@ -1,0 +1,32 @@
+{
+  "wr": {
+    "name": "Western Railway",
+    "hosts": ["wr.indianrailways.gov.in", "oldwr.indianrailways.gov.in"],
+    "pages": [
+      {
+        "id": "wr-suburban",
+        "title": "WR Mumbai Suburban Time Table",
+        "path": "/view_section.jsp?lang=0&id=0,6,458",
+        "min_pdfs": 5
+      }
+    ]
+  },
+  "cr": {
+    "name": "Central Railway",
+    "hosts": ["cr.indianrailways.gov.in", "oldcr.indianrailways.gov.in"],
+    "pages": [
+      {
+        "id": "cr-mumbai",
+        "title": "CR Mumbai Suburban Time Table",
+        "path": "/view_section.jsp?lang=0&id=0,5,2360",
+        "min_pdfs": 8
+      },
+      {
+        "id": "cr-pune",
+        "title": "CR Pune Suburban Time Table",
+        "path": "/view_section.jsp?lang=0&id=0,5,2361",
+        "min_pdfs": 2
+      }
+    ]
+  }
+}

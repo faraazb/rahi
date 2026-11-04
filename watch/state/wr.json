@@ -1,0 +1,73 @@
+{
+  "pages": {
+    "wr-suburban": {
+      "files": {
+        "/cris//uploads/files/1637561529471-UP%20HARBOUR%20%20W.E.F.%2022.11.2021.pdf": {
+          "etag": "W/\"575255-1637561529525\"",
+          "first_seen": "2026-11-05",
+          "last_modified": "Mon, 22 Nov 2021 06:12:09 GMT",
+          "length": 575255,
+          "name": "1637561529471-UP HARBOUR  W.E.F. 22.11.2021.pdf",
+          "sha256": "402396c19caed2815214af6125dac0dd34864d092142c99e3c4dcb5966e90430",
+          "title": ""
+        },
+        "/cris//uploads/files/1680671789509-HARBOUR%20SERVICES%20W.E.F%20%20%2001.10.2022.pdf": {
+          "etag": "W/\"96067-1680671789512\"",
+          "first_seen": "2026-11-05",
+          "last_modified": "Wed, 05 Apr 2023 05:16:29 GMT",
+          "length": 96067,
+          "name": "1680671789509-HARBOUR SERVICES W.E.F   01.10.2022.pdf",
+          "sha256": "659d6127b8c73199038613364cf36af39ba786100116724160dcd8d61b5bbf91",
+          "title": "HARBOUR SERVICES W.E.F 01.10.2022"
+        },
+        "/cris//uploads/files/1788159627721-DN%20TRAINS%20PTT%2079%20W.E.F.%2001.09.2026.pdf": {
+          "etag": "W/\"791409-1788159627742\"",
+          "first_seen": "2026-11-05",
+          "last_modified": "Mon, 31 Aug 2026 07:00:27 GMT",
+          "length": 791409,
+          "name": "1788159627721-DN TRAINS PTT 79 W.E.F. 01.09.2026.pdf",
+          "sha256": "3cfcb598a5b83b1cffd960db4e8b79d9f57f7c167f88069ea325a5541dca867d",
+          "title": "POCKET TIME TABLE 79 DN"
+        },
+        "/cris//uploads/files/1788159720525-UP%20TRAINS%20PTT%2079%20W.E.F.%2001.09.2026.pdf": {
+          "etag": "W/\"544116-1788159720543\"",
+          "first_seen": "2026-11-05",
+          "last_modified": "Mon, 31 Aug 2026 07:02:00 GMT",
+          "length": 544116,
+          "name": "1788159720525-UP TRAINS PTT 79 W.E.F. 01.09.2026.pdf",
+          "sha256": "0d2d8d63517630eb0e9890901945577090a236f04ddc85f77e0fec9d4896be78",
+          "title": "POCKET TIME TABLE 79 UP"
+        },
+        "/cris//uploads/files/1788159762760-DN%20AC%20TRAINS%20PTT%2079%20W.E.F.%2001.09.2026.pdf": {
+          "etag": "W/\"324029-1788159762770\"",
+          "first_seen": "2026-11-05",
+          "last_modified": "Mon, 31 Aug 2026 07:02:42 GMT",
+          "length": 324029,
+          "name": "1788159762760-DN AC TRAINS PTT 79 W.E.F. 01.09.2026.pdf",
+          "sha256": "155dc2bd5fa0979517ddab31bab706b52e5521822fd7415e5129754c98ca8f8e",
+          "title": "PTT DN AC EMU SWTT-7"
+        },
+        "/cris//uploads/files/1788159808195-UP%20AC%20TRAINS%20PTT%2079%20W.E.F.%2001.09.2026.pdf": {
+          "etag": "W/\"235119-1788159808202\"",
+          "first_seen": "2026-11-05",
+          "last_modified": "Mon, 31 Aug 2026 07:03:28 GMT",
+          "length": 235119,
+          "name": "1788159808195-UP AC TRAINS PTT 79 W.E.F. 01.09.2026.pdf",
+          "sha256": "ecf5dec773953745764c7080bc0ac6aad627db5759d9fd9c835f69b892282089",
+          "title": "PTT UP AC EMU SWTT-7"
+        },
+        "/cris//uploads/files/1788159851897-DAHANU%20ROAD%20SERVICES%20PTT%20W.E.F.%2001.09.2026.pdf": {
+          "etag": "W/\"557973-1788159851917\"",
+          "first_seen": "2026-11-05",
+          "last_modified": "Mon, 31 Aug 2026 07:04:11 GMT",
+          "length": 557973,
+          "name": "1788159851897-DAHANU ROAD SERVICES PTT W.E.F. 01.09.2026.pdf",
+          "sha256": "4cdbac7d8f2755230f6f9bbc7e07bd8138597fb57005505847e75dd44487dedf",
+          "title": "POCKET TIME TABLE DAHANU ROAD EMU SERVICES"
+        }
+      },
+      "host": "oldwr.indianrailways.gov.in"
+    }
+  },
+  "railway": "wr"
+}
