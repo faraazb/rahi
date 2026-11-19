@@ -20,7 +20,7 @@
 # GitHub Release / Pages is not wired up yet.
 #
 # Google Play login, from secrets in the "Act" environment (see pipeline/tools/yatri_fetch.py):
-#   GOOGLE_EMAIL + GOOGLE_AAS_TOKEN        your own account, or
+#   GOOGLE_EMAIL + GOOGLE_AAS_TOKEN        your own account (also read as EMAIL + AAS_TOKEN), or
 #   DISPENSER_URL + DISPENSER_USER_AGENT   a token dispenser such as Aurora's.
 # GitHub runners share datacenter IPs, so Google Play and dispensers rate-limit
 # them more often than a home connection; the fetch retries with backoff.
@@ -90,8 +90,8 @@ jobs:
         id: yatri
         continue-on-error: true
         env:
-          GOOGLE_EMAIL: ${{ secrets.GOOGLE_EMAIL }}
-          GOOGLE_AAS_TOKEN: ${{ secrets.GOOGLE_AAS_TOKEN }}
+          GOOGLE_EMAIL: ${{ secrets.GOOGLE_EMAIL || secrets.EMAIL || vars.GOOGLE_EMAIL }}
+          GOOGLE_AAS_TOKEN: ${{ secrets.GOOGLE_AAS_TOKEN || secrets.AAS_TOKEN }}
           DISPENSER_URL: ${{ secrets.DISPENSER_URL }}
           DISPENSER_USER_AGENT: ${{ secrets.DISPENSER_USER_AGENT }}
         run: |
