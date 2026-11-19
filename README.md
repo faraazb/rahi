@@ -56,7 +56,7 @@ mise run release-local                          # `mise run release` refuses a D
 
 `pipeline/tools/yatri_fetch.py` logs in to Google Play with your own account (`GOOGLE_EMAIL` and
 `GOOGLE_AAS_TOKEN`) or a token dispenser (`DISPENSER_URL` and `DISPENSER_USER_AGENT`). It downloads
-with apkeep (pinned in `mise.toml`) only when Play has a new version, and extracts
+the current version with apkeep (pinned in `mise.toml`), and extracts
 `assets/databases/yatri.db` into `temp.fignore/yatri/`.
 
 In CI, `.github/workflows/yatri-platforms.yml` builds the database from the newest snapshots, tries the

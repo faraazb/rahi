@@ -40,7 +40,7 @@ description = "Package pipeline/build/mumbai-local.sqlite as a release in pipeli
 run = "uv run --project pipeline mumbailocal release --db pipeline/build/mumbai-local.sqlite --out pipeline/build/releases"
 
 [tasks.yatri]
-description = "LOCAL ONLY: fetch Yatri from Google Play if it changed and extract its DB into temp.fignore/yatri/ (mise run yatri -- --apk <base.apk> to skip the download)"
+description = "LOCAL ONLY: fetch the current Yatri from Google Play and extract its DB into temp.fignore/yatri/ (mise run yatri -- --apk <base.apk> to skip the download)"
 run = "uv run --project pipeline python -I pipeline/tools/yatri_fetch.py"
 
 [tasks.platforms]

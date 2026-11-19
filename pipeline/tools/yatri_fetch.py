@@ -4,9 +4,8 @@
 LOCAL ONLY: the database is used for the local platforms layer and as a
 validation reference. Nothing fetched here is committed or published.
 
-    yatri_fetch.py                      log in, download if Play has a new version, extract
+    yatri_fetch.py                      log in, download the current version, extract
     yatri_fetch.py --apk path/base.apk  extract from an APK you already have (no network)
-    yatri_fetch.py --check              only print the version on Play
 
 Steps:
   1. Log in to Google Play, one of two ways:
@@ -17,9 +16,11 @@ Steps:
          (https://auroraoss.com/api/auth) only answers clients that identify
          as Aurora Store, so DISPENSER_USER_AGENT must be set to use it.
      Dispensed tokens are cached for TOKEN_TTL in the cache directory.
-  2. `apkeep -l` asks Play for the current version; if that version is
-     already cached, nothing is downloaded.
-  3. `apkeep` downloads the split APKs; only base.apk holds the database.
+  2. `apkeep` downloads the current split APKs; only base.apk holds the
+     database. Google Play serves only the current version and apkeep cannot
+     ask which one that is (`apkeep -l` prints no versions for Play, and
+     `app@version` is refused), so the version is read afterwards from
+     base.apk's AndroidManifest.xml.
   4. assets/databases/yatri.db is pulled out with zipfile, checked to be a
      SQLite file with the tables we use, and installed as <cache>/yatri.db
      (the previous copy is kept as yatri.prev.db) with yatri.json beside it.
@@ -41,6 +42,7 @@ import os
 import re
 import shutil
 import sqlite3
+import struct
 import subprocess
 import sys
 import tempfile
@@ -115,7 +117,9 @@ def dispensed_login(cache: Path, url: str, user_agent: str, attempts: int) -> tu
             return email, token
         except urllib.error.HTTPError as e:
             if e.code == 403:
-                raise LoginFailed(f"dispenser refused this client (HTTP 403); check DISPENSER_USER_AGENT") from e
+                raise LoginFailed(
+                    "dispenser refused this client (HTTP 403): a wrong DISPENSER_USER_AGENT, or the "
+                    "dispenser blocks this IP (Aurora's blocks GitHub's runners)") from e
             reason = f"HTTP {e.code}"
         except (urllib.error.URLError, TimeoutError, ValueError, KeyError) as e:
             reason = str(e)
@@ -156,28 +160,63 @@ def apkeep(args: list[str]) -> subprocess.CompletedProcess:
     return subprocess.run([exe, *args], capture_output=True, text=True, timeout=1800)
 
 
-def play_version(auth: list[str]) -> str:
-    r = apkeep(["-l", "-a", PACKAGE, "-d", "google-play", *auth, "-o", f"device={DEVICE}"])
-    out = r.stdout + r.stderr
-    if r.returncode != 0:
-        raise LoginFailed(f"apkeep could not list versions: {out.strip()[-500:]}")
-    versions = re.findall(r"\b\d+(?:\.\d+)+\b", out)
-    if not versions:
-        raise SystemExit(f"could not read a version from apkeep's output:\n{out}")
-    return versions[-1]
-
-
-def download(auth: list[str], version: str, dest: Path) -> Path:
-    """Download into dest/; return the APK that contains the database."""
-    dest.mkdir(parents=True, exist_ok=True)
-    r = apkeep(["-a", f"{PACKAGE}@{version}", "-d", "google-play", *auth, "--accept-tos",
+def download(auth: list[str], dest: Path) -> Path:
+    """Download the current version into dest/; return the APK that contains the database."""
+    if dest.exists():
+        shutil.rmtree(dest)
+    dest.mkdir(parents=True)
+    r = apkeep(["-a", PACKAGE, "-d", "google-play", *auth, "--accept-tos",
                 "-o", f"device={DEVICE},split_apk=true", str(dest)])
-    if r.returncode != 0:
-        raise SystemExit(f"apkeep download failed:\n{(r.stdout + r.stderr).strip()[-1500:]}")
+    out = (r.stdout + r.stderr).strip()
+    if "Could not log in" in out:
+        raise LoginFailed(out[-500:])
     apk = find_db_apk(dest)
-    if not apk:
-        raise SystemExit(f"downloaded files in {dest} hold no {DB_ENTRY}")
+    if r.returncode != 0 or not apk:
+        # apkeep reports most failures as "... Skipping..." and still exits 0.
+        hint = (" Play did not offer the app to this account and device: it may need the app"
+                " installed once from India on this account, or a different device profile."
+                if "Invalid app response" in out else "")
+        raise SystemExit(f"apkeep download gave no {DB_ENTRY}.{hint}\n{out[-1500:]}")
     return apk
+
+
+def manifest_version(apk: Path) -> tuple[str | None, int | None]:
+    """versionName and versionCode from an APK's binary AndroidManifest.xml."""
+    with zipfile.ZipFile(apk) as z:
+        data = z.read("AndroidManifest.xml")
+    strings: list[str] = []
+    pos = 8  # after the XML chunk header
+    while pos + 8 <= len(data):
+        ctype, hsize, csize = struct.unpack_from("<HHI", data, pos)
+        if ctype == 0x0001:  # string pool
+            count, _, flags, start = struct.unpack_from("<IIII", data, pos + 8)
+            for i in range(count):
+                off = pos + start + struct.unpack_from("<I", data, pos + hsize + 4 * i)[0]
+                if flags & 0x100:  # UTF-8: char count, then byte count, each 1 or 2 bytes
+                    off += 2 if data[off] & 0x80 else 1
+                    n = data[off]
+                    off += 1
+                    if n & 0x80:
+                        n = ((n & 0x7F) << 8) | data[off]
+                        off += 1
+                    strings.append(data[off:off + n].decode("utf-8", "replace"))
+                else:  # UTF-16: unit count in 1 or 2 u16s
+                    n = struct.unpack_from("<H", data, off)[0]
+                    off += 2
+                    if n & 0x8000:
+                        n = ((n & 0x7FFF) << 16) | struct.unpack_from("<H", data, off)[0]
+                        off += 2
+                    strings.append(data[off:off + 2 * n].decode("utf-16-le", "replace"))
+        elif ctype == 0x0102 and strings[struct.unpack_from("<I", data, pos + 20)[0]] == "manifest":
+            astart, asize, acount = struct.unpack_from("<HHH", data, pos + 24)
+            found: dict = {}
+            for i in range(acount):
+                _, name, raw, _, _, vtype, value = struct.unpack_from("<IIIHBBI", data, pos + 16 + astart + i * asize)
+                if strings[name] in ("versionName", "versionCode"):
+                    found[strings[name]] = strings[raw] if raw != 0xFFFFFFFF else value if vtype in (0x10, 0x11) else None
+            return found.get("versionName"), found.get("versionCode")
+        pos += csize
+    return None, None
 
 
 def find_db_apk(root: Path) -> Path | None:
@@ -238,38 +277,25 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--cache", type=Path, default=DEFAULT_CACHE, help=f"default: {DEFAULT_CACHE.relative_to(REPO)}")
     ap.add_argument("--apk", type=Path, help="extract from this APK instead of downloading")
-    ap.add_argument("--check", action="store_true", help="only print the version on Google Play")
-    ap.add_argument("--force", action="store_true", help="download even if this version is cached")
     ap.add_argument("--attempts", type=int, default=3, help="dispenser login attempts (backoff 30s, 90s, ...)")
     a = ap.parse_args()
     cache = a.cache
     cache.mkdir(parents=True, exist_ok=True)
 
     if a.apk:
-        extract(a.apk, cache, version=None)
+        name, code = manifest_version(a.apk)
+        extract(a.apk, cache, version=f"{name} ({code})" if name else None)
         return 0
     try:
         auth = login(cache, a.attempts)
-        version = play_version(auth)
+        log(f"downloading the current {PACKAGE} from Google Play ...")
+        apk = download(auth, cache / "apk" / "current")
     except LoginFailed as e:
         log(f"login failed: {e}")
         return 3
-    log(f"Google Play has {PACKAGE} {version}")
-    if a.check:
-        return 0
-    apk_dir = cache / "apk" / version
-    apk = None if a.force else find_db_apk(apk_dir) if apk_dir.exists() else None
-    if apk:
-        log(f"version {version} already downloaded: {apk}")
-    else:
-        if apk_dir.exists():
-            shutil.rmtree(apk_dir)
-        log(f"downloading {PACKAGE} {version} ...")
-        apk = download(auth, version, apk_dir)
-        # Keep only the newest download; each is ~130 MB.
-        for old in (cache / "apk").iterdir():
-            if old != apk_dir and old.is_dir():
-                shutil.rmtree(old)
+    name, code = manifest_version(apk)
+    version = f"{name} ({code})" if name else None
+    log(f"downloaded {PACKAGE} {version or '(version unknown)'}")
     extract(apk, cache, version)
     return 0
 
