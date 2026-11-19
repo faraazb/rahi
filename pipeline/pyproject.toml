@@ -1,0 +1,22 @@
+[project]
+name = "mumbailocal"
+version = "0.1.0"
+description = "Open, ad-free Mumbai suburban timetable: parsers for official WR/CR/NTES sources"
+requires-python = ">=3.13"
+dependencies = ["pdfplumber>=0.11"]
+
+[project.scripts]
+mumbailocal = "mumbailocal.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mumbailocal"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,70 @@
+[tools]
+python = "3.13"
+uv = "latest"
+node = "26" # active LTS ("Lithium") since 2026-10-28
+"ubi:EFForg/apkeep" = "1.1.0" # Google Play downloads for the local Yatri platforms layer
+
+# Run from the repo root: `mise run <task>`.
+
+[tasks.test]
+description = "Pipeline tests (parsers, release regression suite)"
+dir = "pipeline"
+run = "uv run pytest -q"
+
+[tasks.wr]
+description = "Parse a WR release into pipeline/build, gated: mise run wr -- data/raw/wr/<date> [--previous data/raw/wr/<date>]"
+run = "uv run --project pipeline mumbailocal wr --strict --db pipeline/build/mumbai-local.sqlite --json pipeline/build/wr.json --diag pipeline/build/wr.diag.json"
+
+[tasks.cr]
+description = "Parse a CR download (Main, Harbour, Trans-Harbour, Port, Pune) into pipeline/build, gated: mise run cr -- data/raw/cr/<date>"
+run = "uv run --project pipeline mumbailocal cr --strict --db pipeline/build/mumbai-local-cr.sqlite --json pipeline/build/cr.json --diag pipeline/build/cr.diag.json"
+
+[tasks.ntes-fetch]
+description = "Save NTES schedule pages for Vasai-Diva-Panvel and Neral-Matheran: mise run ntes-fetch -- data/raw/ntes/<date>"
+run = "uv run --project pipeline mumbailocal ntes-fetch"
+
+[tasks.ntes]
+description = "Parse a saved NTES snapshot into pipeline/build, gated: mise run ntes -- data/raw/ntes/<date>"
+run = "uv run --project pipeline mumbailocal ntes --strict --db pipeline/build/mumbai-local-ntes.sqlite --json pipeline/build/ntes.json --diag pipeline/build/ntes.diag.json"
+
+[tasks.build]
+description = "Parse WR, CR and NTES into one gated database: mise run build -- --wr data/raw/wr/<date> --cr data/raw/cr/<date> --ntes data/raw/ntes/<date>"
+run = "uv run --project pipeline mumbailocal build --strict --db pipeline/build/mumbai-local.sqlite --json pipeline/build/all.json --diag pipeline/build/all.diag.json"
+
+[tasks.compare]
+description = "LOCAL ONLY: compare one line of pipeline/build/mumbai-local.sqlite with Yatri: mise run compare -- --line CR"
+run = "uv run --project pipeline python pipeline/tools/compare_yatri.py pipeline/build/mumbai-local.sqlite temp.fignore/yatri/yatri.db"
+
+[tasks.release]
+description = "Package pipeline/build/mumbai-local.sqlite as a release in pipeline/build/releases/<tag>/"
+run = "uv run --project pipeline mumbailocal release --db pipeline/build/mumbai-local.sqlite --out pipeline/build/releases"
+
+[tasks.yatri]
+description = "LOCAL ONLY: fetch Yatri from Google Play if it changed and extract its DB into temp.fignore/yatri/ (mise run yatri -- --apk <base.apk> to skip the download)"
+run = "uv run --project pipeline python -I pipeline/tools/yatri_fetch.py"
+
+[tasks.platforms]
+description = "LOCAL ONLY: add Yatri's platforms and door sides to pipeline/build/mumbai-local.sqlite, gated"
+run = "uv run --project pipeline mumbailocal platforms --strict --db pipeline/build/mumbai-local.sqlite --yatri temp.fignore/yatri/yatri.db --stats pipeline/build/platforms.stats.json"
+
+[tasks.release-local]
+description = "Like release, but allows the local-only platforms layer; never publish its output"
+run = "uv run --project pipeline mumbailocal release --local --db pipeline/build/mumbai-local.sqlite --out pipeline/build/releases"
+
+[tasks.data-server]
+description = "Mock GitHub Releases for the timetable on http://127.0.0.1:8787"
+run = "uv run --project pipeline python pipeline/tools/data_server.py"
+
+[tasks.testbench]
+description = "Local timetable testbench on http://127.0.0.1:8000"
+run = "uv run --project pipeline python pipeline/tools/testbench.py"
+
+[tasks.dev]
+description = "SvelteKit dev server for the PWA"
+dir = "app"
+run = "npm run dev"
+
+[tasks.dev-lan]
+description = "Dev server reachable from phones on the local network (plain HTTP: no service worker)"
+dir = "app"
+run = "npm run dev -- --host 0.0.0.0"

@@ -1,0 +1,317 @@
+/* Semantic tokens from the design's "Theme tokens" board. Every component
+   reads these and nothing else; line colours are tokens too. */
+
+:root,
+:root[data-theme='light'] {
+	color-scheme: light;
+	--bg: #f3f4f7;
+	--surface: #ffffff;
+	--surface2: #eceef2;
+	--text: #0e1116;
+	--text2: #454c5a;
+	--text3: #5f6676;
+	--border: #e0e3e9;
+	--primary: #2b47d9;
+	--on-primary: #ffffff;
+	--primary-soft: #e6eafd;
+	--on-primary-soft: #1e31a6;
+	--success: #0b7a47;
+	--success-soft: #dcf2e6;
+	--warn: #8f5300;
+	--warn-soft: #fdefd5;
+	--danger: #b8281b;
+	--danger-soft: #fce3df;
+	--nav-bg: #ffffff;
+	--shadow: 0 1px 2px rgba(14, 17, 22, 0.06), 0 6px 20px rgba(14, 17, 22, 0.05);
+	--shadow-pop: 0 12px 40px rgba(14, 17, 22, 0.16);
+	--l-w: #1d66c9;
+	--l-c: #c8402a;
+	--l-h: #0b7f74;
+	--l-t: #6e45cf;
+	--l-m: #9a5c00;
+	--l-mo: #b32f70;
+	--l-u: #5b6b00;
+	--l-p: #8a4b2a;
+	--l-vp: #00708f;
+	--l-nm: #2f7a1f;
+	--on-line: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme='light']) {
+		color-scheme: dark;
+		--bg: #0a0c10;
+		--surface: #14171d;
+		--surface2: #1d2129;
+		--text: #f1f3f6;
+		--text2: #b3b9c5;
+		--text3: #8c93a1;
+		--border: #262a33;
+		--primary: #8ea2ff;
+		--on-primary: #0a0c10;
+		--primary-soft: #1c2448;
+		--on-primary-soft: #bfcbff;
+		--success: #4acb8a;
+		--success-soft: #0f2a1d;
+		--warn: #f2b24e;
+		--warn-soft: #2d2110;
+		--danger: #ff7d6e;
+		--danger-soft: #341714;
+		--nav-bg: #111419;
+		--shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+		--shadow-pop: 0 12px 40px rgba(0, 0, 0, 0.5);
+		--l-w: #5ea1ff;
+		--l-c: #ff826a;
+		--l-h: #3fcbbc;
+		--l-t: #ae90ff;
+		--l-m: #ffb54a;
+		--l-mo: #ff84be;
+		--l-u: #c4d64d;
+		--l-p: #e8a07a;
+		--l-vp: #5ccfee;
+		--l-nm: #7fd66a;
+		--on-line: #0a0c10;
+	}
+}
+
+:root[data-theme='dark'] {
+	color-scheme: dark;
+	--bg: #0a0c10;
+	--surface: #14171d;
+	--surface2: #1d2129;
+	--text: #f1f3f6;
+	--text2: #b3b9c5;
+	--text3: #8c93a1;
+	--border: #262a33;
+	--primary: #8ea2ff;
+	--on-primary: #0a0c10;
+	--primary-soft: #1c2448;
+	--on-primary-soft: #bfcbff;
+	--success: #4acb8a;
+	--success-soft: #0f2a1d;
+	--warn: #f2b24e;
+	--warn-soft: #2d2110;
+	--danger: #ff7d6e;
+	--danger-soft: #341714;
+	--nav-bg: #111419;
+	--shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+	--shadow-pop: 0 12px 40px rgba(0, 0, 0, 0.5);
+	--l-w: #5ea1ff;
+	--l-c: #ff826a;
+	--l-h: #3fcbbc;
+	--l-t: #ae90ff;
+	--l-m: #ffb54a;
+	--l-mo: #ff84be;
+	--l-u: #c4d64d;
+	--l-p: #e8a07a;
+	--l-vp: #5ccfee;
+	--l-nm: #7fd66a;
+	--on-line: #0a0c10;
+}
+
+/* "Line colours" off: wayfinding falls back to neutral ink. */
+:root[data-lines='off'] {
+	--l-w: var(--text2);
+	--l-c: var(--text2);
+	--l-h: var(--text2);
+	--l-t: var(--text2);
+	--l-m: var(--text2);
+	--l-mo: var(--text2);
+	--l-u: var(--text2);
+	--l-p: var(--text2);
+	--l-vp: var(--text2);
+	--l-nm: var(--text2);
+	--on-line: var(--surface);
+}
+
+/* Type is set in rem so the text-size setting scales the whole interface. */
+html {
+	font-size: 16px;
+	-webkit-text-size-adjust: 100%;
+	text-size-adjust: 100%;
+}
+:root[data-text='small'] {
+	font-size: 14.5px;
+}
+:root[data-text='large'] {
+	font-size: 18px;
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	background: var(--bg);
+	color: var(--text);
+	font-family: 'Figtree Variable', 'Figtree', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+	font-size: 0.9375rem;
+	line-height: 1.35;
+	-webkit-font-smoothing: antialiased;
+	-webkit-tap-highlight-color: transparent;
+}
+
+button,
+input {
+	font: inherit;
+	color: inherit;
+}
+button {
+	cursor: pointer;
+}
+a {
+	color: inherit;
+	text-decoration: none;
+}
+h1,
+h2,
+h3,
+p,
+ol,
+ul {
+	margin: 0;
+}
+
+.num {
+	font-variant-numeric: tabular-nums;
+}
+
+.eyebrow {
+	margin: 0 4px;
+	font-size: 0.8125rem;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--text3);
+}
+
+.card {
+	border-radius: 20px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+}
+
+.round-btn {
+	flex: none;
+	width: 44px;
+	height: 44px;
+	display: grid;
+	place-items: center;
+	border-radius: 999px;
+	border: 1px solid var(--border);
+	background: var(--surface);
+	color: var(--text);
+}
+
+.visually-hidden {
+	position: absolute !important;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+}
+
+:focus-visible {
+	outline: 2px solid var(--primary);
+	outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	* {
+		transition: none !important;
+		animation: none !important;
+	}
+}
+
+/* ---- Screen frame -------------------------------------------------------
+   Phone: each screen is a fixed-height column (header, scrolling main,
+   docked controls) inside the shell, as in the design. Wide screens: normal
+   page flow in a centred column under the top bar. */
+
+.page {
+	flex: 1;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+}
+.page-head {
+	flex: none;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: calc(env(safe-area-inset-top, 0px) + 20px) 12px 12px;
+}
+.page-main {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	padding: 4px 16px 24px;
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+/* Children keep their natural height so .page-main scrolls instead. Without
+   this, a child with overflow: hidden (every .card list) gets an automatic
+   min-height of 0, shrinks to fit the viewport and clips its rows. */
+.page-main > * {
+	flex-shrink: 0;
+}
+.head-row {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+.head-title {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+}
+.head-title h1 {
+	font-size: 1.1875rem;
+	font-weight: 800;
+	letter-spacing: -0.01em;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+}
+.head-sub {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 0.8125rem;
+	color: var(--text3);
+	min-width: 0;
+}
+.back {
+	flex: none;
+	width: 44px;
+	height: 44px;
+	display: grid;
+	place-items: center;
+	border-radius: 999px;
+	color: var(--text);
+}
+
+@media (min-width: 900px) {
+	.page {
+		flex: none;
+		width: 100%;
+		max-width: 760px;
+		margin: 0 auto;
+		padding: 24px 0 64px;
+	}
+	.page-head {
+		padding: 8px 12px 16px;
+	}
+	.page-main {
+		overflow: visible;
+	}
+}

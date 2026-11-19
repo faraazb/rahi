@@ -1,0 +1,18 @@
+seq,code,name,aliases,code_source,prev
+1,TNA,Thane,THANE,ntes,
+2,DGHA,Digha Gaon,DIGH|DIGHA|DIGHA GAON,ntes,
+3,AIRL,Airoli,AIROLI,ntes,
+4,RABE,Rabale,RABALE,ntes,
+5,GNSL,Ghansoli,GHANSOLI,ntes,
+6,KPHN,Kopar Khairane,KOPAR KHAIRANE|KOPARKHAIRANE,ntes,
+7,TUH,Turbhe,TURBHE,ntes,
+8,SNCR,Sanpada,SANPADA|SNPD,ntes,TUH
+9,VSH,Vashi,VASHI,ntes,
+8,JNJ,Juinagar,JUINAGAR|JUI NAGAR,ntes,TUH
+9,NEU,Nerul,NERUL,ntes,
+10,SWDV,Seawoods–Darave,SEAWOODS DARAVE KARAVE|SEAWOOD DARAVE KARAVE|SEAWOODS DARAVE|SEAWOODS,ntes,
+11,BEPR,Belapur CBD,BELAPUR CBD|BELAPUR|CBD BELAPUR,ntes,
+12,KHAG,Kharghar,KHARGHAR,ntes,
+13,MANR,Mansarovar,MANSAROVAR,ntes,
+14,KNDS,Khandeshwar,KHANDESHWAR,ntes,
+15,PNVL,Panvel,PANVEL,ntes,

@@ -1,2 +1,14 @@
+# Local-only material: APKs, decompiled sources, reference DBs, downloaded tools
+temp.fignore/
+
+# Python
+.venv/
 __pycache__/
-*.pyc
+.pytest_cache/
+pipeline/build/
+
+# Node (app/ has its own .gitignore for build output)
+node_modules/
+
+# OS
+.DS_Store

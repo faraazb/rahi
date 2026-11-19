@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+		<meta name="text-scale" content="scale" />
+		<meta name="description" content="Mumbai local train timetable. Offline, ad-free, from official timetables." />
+		<meta name="theme-color" content="#F3F4F7" media="(prefers-color-scheme: light)" />
+		<meta name="theme-color" content="#0A0C10" media="(prefers-color-scheme: dark)" />
+		<link rel="manifest" href="%sveltekit.assets%/manifest.webmanifest" />
+		<link rel="icon" href="%sveltekit.assets%/icon.svg" type="image/svg+xml" />
+		<link rel="apple-touch-icon" href="%sveltekit.assets%/icon-192.png" />
+		<script>
+			// Apply saved appearance before first paint, so a dark-theme user
+			// never sees a light flash.
+			try {
+				const p = JSON.parse(localStorage.getItem('rahi.prefs') || '{}');
+				const r = document.documentElement;
+				if (p.theme === 'light' || p.theme === 'dark') r.dataset.theme = p.theme;
+				if (p.textSize) r.dataset.text = p.textSize;
+				if (p.lineColours === false) r.dataset.lines = 'off';
+			} catch {}
+		</script>
+		%sveltekit.head%
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<div style="display: contents">%sveltekit.body%</div>
+	</body>
+</html>

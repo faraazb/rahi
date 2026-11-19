@@ -1,0 +1,38 @@
+seq,code,name,aliases,code_source
+1,CCG,Churchgate,CHURCHGATE|CHUCHGATE,pdf-header+ntes
+2,MEL,Marine Lines,MARINE LINES|MERINE LINE,manual
+3,CYR,Charni Road,CHARNI ROAD|CHERNI ROAD,manual
+4,GTR,Grant Road,GRANT ROAD,manual
+5,BCL,Mumbai Central,M'BAI CENTRAL (L)|M'BAI CENTRAL|MUM'AI CENTRAL(L)|MUMBAI CENTRAL (L)|MUMBAI CENTRAL,pdf-header
+6,MX,Mahalaxmi,MAHALAKSHMI|MAHALAXMI,manual
+7,PL,Lower Parel,LOWER PAREL,manual
+8,PBHD,Prabhadevi,PRABHADEVI|ELPHINSTONE ROAD,manual
+9,DDR,Dadar,DADAR,pdf-header+ntes
+10,MRU,Matunga Road,MATUNGA ROAD,ntes
+11,MM,Mahim Junction,MAHIM JN.|MAHIM JN|MAHIM,manual
+12,BA,Bandra,BANDRA,pdf-header
+13,KHAR,Khar Road,KHAR ROAD,ntes
+14,STC,Santacruz,SANTA CRUZ|SANTACRUZ,manual
+15,VLP,Vile Parle,VILE PARLE,ntes
+16,ADH,Andheri,ANDHERI,pdf-header+ntes
+17,JOS,Jogeshwari,JOGESHWARI,ntes
+18,RMAR,Ram Mandir,RAM MANDIR,ntes
+19,GMN,Goregaon,GOREGAON,pdf-header
+20,MDD,Malad,MALAD,pdf-header
+21,KILE,Kandivli,KANDIVLI|KANDIVALI,manual
+22,BVI,Borivali,BORIVALI,pdf-header+ntes
+23,DIC,Dahisar,DAHISAR,manual
+24,MIRA,Mira Road,MIRA ROAD,manual
+25,BYR,Bhayandar,BHAYANDAR|BHAYANDER,pdf-header+ntes
+26,NIG,Naigaon,NAIGAON,manual
+27,BSR,Vasai Road,VASAI ROAD,pdf-header+ntes
+28,NSP,Nallasopara,NALLA SOPARA|NALLASOPARA,pdf-header+ntes
+29,VR,Virar,VIRAR,pdf-header+ntes
+30,VTN,Vaitarna,VAITARNA|VAITERNA,ntes
+31,SAH,Saphale,SAPHALE,ntes
+32,KLV,Kelve Road,KELVE ROAD|KEVE ROAD|KELVA ROAD,ntes
+33,PLG,Palghar,PALGHAR,ntes
+34,UOI,Umroli,UMROLI,ntes
+35,BOR,Boisar,BOISAR|BOISOR,ntes
+36,VGN,Vangaon,VANGAON,ntes
+37,DRD,Dahanu Road,DAHANU ROAD|DAHANU RD,pdf-header+ntes

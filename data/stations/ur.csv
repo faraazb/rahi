@@ -1,0 +1,12 @@
+seq,code,name,aliases,code_source,prev
+1,NEU,Nerul,NERUL,ntes,
+2,SWDV,Seawoods–Darave,SEAWOODS DARAVE KARAVE|SEAWOOD DARAVE KARAVE|SEAWOODS DARAVE|SEAWOODS,ntes,
+2,BEPR,Belapur CBD,BELAPUR CBD|BELAPUR|CBD BELAPUR,ntes,-
+3,TRGR,Targhar,TARGHAR,manual,SWDV|BEPR
+4,BMDR,Bamandongri,BAMANDONGRI,manual,
+5,KHKR,Kharkopar,KHARKOPAR,manual,
+6,GAVN,Gavhan,GAVHAN,ntes,
+7,SMKR,Shemtikhar,SHEMATIKHAR|SHEMTIKHAR,manual,
+8,NHSV,Nhava Sheva,NHAVE SHEVA|NHAVA SHEVA|NAVA SHEVA,manual,
+9,DRGI,Dronagiri,DRONAGIRI,ntes,
+10,URAN,Uran,URAN,ntes,
