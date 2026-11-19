@@ -1,0 +1,136 @@
+# Publishes the timetable and the app.
+#
+# Runs on pushes to main, which is how a timetable change goes live: the
+# watcher's PR (watch/<railway>) is merged after its preview build looked right.
+#
+#   data   when the timetable inputs changed (data/, pipeline/src/, mise.toml) or
+#          on a manual run: build with yatri-platforms.yml (publish: true), which
+#          creates a GitHub Release marked latest unless the latest release
+#          already holds the same data. MERGE_YATRI_PLATFORMS (Act environment)
+#          still decides whether Yatri's layers are in it.
+#   pages  builds the app (app/) and deploys it to GitHub Pages with the latest
+#          release's files at data/latest/. Phones read the timetable from there:
+#          GitHub Release downloads send no CORS header, so a browser cannot fetch
+#          them directly (see pipeline/src/mumbailocal/release.py).
+#
+# Pages is off until the repository variable DEPLOY_PAGES is "true". It needs
+# Settings -> Pages -> Source: GitHub Actions, which a private repository only
+# gets on a paid plan; until then a run publishes the Release and stops there.
+
+name: Publish
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - data/**
+      - pipeline/src/**
+      - pipeline/pyproject.toml
+      - pipeline/uv.lock
+      - app/**
+      - mise.toml
+      - .github/workflows/publish.yml
+      - .github/workflows/yatri-platforms.yml
+  workflow_dispatch:
+    inputs:
+      data:
+        description: Rebuild and publish the timetable even if its inputs did not change
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      data: ${{ steps.diff.outputs.data }}
+    steps:
+      - id: diff
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+          FORCE: ${{ inputs.data }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          if [ "$EVENT" = workflow_dispatch ]; then
+            echo "data=$FORCE" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = 0000000000000000000000000000000000000000 ]; then
+            echo "data=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          files=$(gh api "repos/$GH_REPO/compare/$BEFORE...$AFTER" --paginate --jq '.files[].filename')
+          if grep -qE '^(data/|pipeline/src/|pipeline/pyproject\.toml|pipeline/uv\.lock|mise\.toml|\.github/workflows/yatri-platforms\.yml)' <<< "$files"; then
+            echo "data=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "data=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  data:
+    needs: changes
+    if: needs.changes.outputs.data == 'true'
+    permissions:
+      contents: write # GitHub Release
+      pull-requests: write
+    uses: ./.github/workflows/yatri-platforms.yml
+    with:
+      publish: true
+    secrets: inherit
+
+  pages:
+    needs: [changes, data]
+    # After a data build (published or not), or straight away when only the app changed.
+    if: >-
+      always() && vars.DEPLOY_PAGES == 'true'
+      && needs.changes.result == 'success'
+      && (needs.data.result == 'success' || needs.data.result == 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: jdx/mise-action@v2
+        with:
+          install: true
+          cache: true
+
+      - name: Build the app
+        working-directory: app
+        env:
+          BASE_PATH: /${{ github.event.repository.name }}
+          VITE_DATA_MANIFEST_URL: /${{ github.event.repository.name }}/data/latest/manifest.json
+        run: |
+          npm ci
+          npm run build
+
+      - name: Add the latest timetable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          tag=$(gh release view --json tagName --jq .tagName)
+          mkdir -p app/build/data/latest
+          gh release download "$tag" --dir app/build/data/latest \
+            --pattern manifest.json --pattern mumbai-local.sqlite.gz
+          echo "Serving timetable $tag at data/latest/" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: app/build
+
+      - id: deploy
+        uses: actions/deploy-pages@v4

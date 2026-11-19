@@ -57,3 +57,16 @@ def test_default_tag_names_content(db_path, tmp_path):
     content = hashlib.sha256(db_path.read_bytes()).hexdigest()[:8]
     assert rel.name.startswith("data-") and rel.name.endswith(content)
     sqlite3.connect(f"file:{db_path}?mode=ro", uri=True).execute("SELECT 1 FROM meta").fetchone()
+
+
+def test_data_hash_ignores_build_time(db_path, tmp_path):
+    import shutil
+    copy = tmp_path / "rebuilt.sqlite"
+    shutil.copy(db_path, copy)
+    with sqlite3.connect(copy) as db:
+        db.execute("UPDATE meta SET value = '1999-01-01T00:00:00+00:00' WHERE key = 'built_at'")
+    a = json.loads((make_release(db_path, tmp_path / "a") / "manifest.json").read_text())
+    b = json.loads((make_release(copy, tmp_path / "b") / "manifest.json").read_text())
+    assert a["db"]["raw_sha256"] != b["db"]["raw_sha256"]
+    assert a["data_sha256"] == b["data_sha256"]
+

@@ -26,8 +26,10 @@ watch/watch.py <railway>      fetch index pages (primary host, then old* mirror)
                                               summary comment on the PR
 ```
 
-- **Merge the PR** to accept the new snapshot. Before that, the build run started on the branch
-  comments on the PR with the release it built and how well Yatri's platforms matched.
+- **Merge the PR** to accept the new snapshot and publish it: the merge to `main` runs
+  `.github/workflows/publish.yml` (GitHub Release, then Pages). Before that, the preview build
+  started on the branch comments on the PR with the release it built and how well Yatri's
+  platforms matched.
 - **Close the PR without merging** to dismiss it. It reopens only if the source changes again.
 - The snapshot folder is named after the newest `Last-Modified` among the changed PDFs, so
   daily reruns do not create new folders.

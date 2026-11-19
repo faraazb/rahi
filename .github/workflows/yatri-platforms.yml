@@ -1,8 +1,12 @@
 # Builds the timetable database from the newest snapshots, tries to add Yatri's
 # platforms, door sides and rake links to it, and packages a release.
 #
-# Started by the timetable watcher (watch/publish.sh) on the watch/<railway>
-# branch whenever it pushes a new snapshot, or by hand.
+# Started three ways:
+#   - by the timetable watcher (watch/publish.sh) on the watch/<railway> branch
+#     whenever it pushes a new snapshot: a preview, summarised on the PR;
+#   - by .github/workflows/publish.yml on main (publish: true), after the
+#     watcher's PR is merged: the release is published as a GitHub Release;
+#   - by hand (Actions -> Yatri platforms -> Run workflow).
 #
 # Whether Yatri's layers go into the release is decided by the variable
 # MERGE_YATRI_PLATFORMS in the "Act" environment (Settings -> Environments -> Act
@@ -16,8 +20,10 @@
 # A Yatri failure (login, download, or the platforms gate) never fails the run:
 # the release then holds official data only and the summary says why.
 #
-# The release folder is uploaded as a workflow artifact. Publishing it to a
-# GitHub Release / Pages is not wired up yet.
+# The release folder is always uploaded as a workflow artifact. With publish
+# (main only) it also becomes a GitHub Release marked latest, unless the latest
+# release already holds the same data (manifest data_sha256). Serving it to
+# phones from GitHub Pages is publish.yml's job.
 #
 # Google Play login, from secrets in the "Act" environment (see pipeline/tools/yatri_fetch.py):
 #   GOOGLE_EMAIL + GOOGLE_AAS_TOKEN        your own account (also read as EMAIL + AAS_TOKEN), or
@@ -39,20 +45,40 @@ on:
       ntes:
         description: NTES folder under data/raw/ntes/ (default the newest)
         required: false
+      publish:
+        description: Publish as a GitHub Release (main only)
+        type: boolean
+        default: false
+  workflow_call:
+    inputs:
+      publish:
+        description: Publish as a GitHub Release (main only)
+        type: boolean
+        default: false
+    outputs:
+      tag:
+        description: Tag of the release built by this run
+        value: ${{ jobs.build.outputs.tag }}
+      published:
+        description: "\"true\" when a new GitHub Release was created"
+        value: ${{ jobs.build.outputs.published }}
 
 permissions:
-  contents: read
+  contents: write # GitHub Release (publish on main only)
   pull-requests: write # summary comment on the watcher's PR
-
-concurrency:
-  group: yatri-platforms-${{ github.ref }}
-  cancel-in-progress: true # a newer snapshot on the same branch supersedes this run
 
 jobs:
   build:
     runs-on: ubuntu-latest
     environment: Act # Google Play secrets and the MERGE_YATRI_PLATFORMS switch
     timeout-minutes: 45
+    concurrency:
+      group: yatri-platforms-${{ github.ref }}
+      # A newer snapshot on a watch branch supersedes a preview; never cut a publish short.
+      cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+      published: ${{ steps.publish.outputs.published }}
     env:
       MERGE: ${{ vars.MERGE_YATRI_PLATFORMS == 'true' }}
     steps:
@@ -133,6 +159,41 @@ jobs:
           path: ${{ steps.release.outputs.dir }}
           retention-days: 30
 
+      - name: Publish the GitHub Release
+        id: publish
+        if: inputs.publish && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          DIR: ${{ steps.release.outputs.dir }}
+          TAG: ${{ steps.release.outputs.tag }}
+          MERGED: ${{ steps.release.outputs.merged }}
+        run: |
+          new=$(jq -r .data_sha256 "$DIR/manifest.json")
+          latest=$(gh release view --json tagName --jq .tagName 2>/dev/null || true)
+          if [ -n "$latest" ]; then
+            old=$(gh release download "$latest" --pattern manifest.json --output - | jq -r '.data_sha256 // empty')
+            if [ "$old" = "$new" ]; then
+              echo "The latest release $latest already holds this data; not publishing."
+              echo "published=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+          {
+            echo "Timetable database for the app, built from:"
+            echo
+            jq -r '.lines[] | "- \(.name): w.e.f. \(.effective_from // "unknown")"' "$DIR/manifest.json"
+            echo
+            jq -r '"\(.counts.trains) trains, \(.counts.stations) line stations, schema v\(.schema_version)."' "$DIR/manifest.json"
+            if [ "$MERGED" = true ]; then
+              echo
+              echo "Includes platforms, door sides and rake links from the Yatri app."
+            fi
+          } > "$RUNNER_TEMP/notes.md"
+          gh release create "$TAG" "$DIR/manifest.json" "$DIR/mumbai-local.sqlite.gz" \
+            --title "Timetable $TAG" --notes-file "$RUNNER_TEMP/notes.md" --target "$GITHUB_SHA" --latest
+          echo "published=true" >> "$GITHUB_OUTPUT"
+
       - name: Summary
         if: always()
         env:
@@ -142,6 +203,7 @@ jobs:
           PLATFORMS: ${{ steps.platforms.outcome }}
           TAG: ${{ steps.release.outputs.tag }}
           MERGED: ${{ steps.release.outputs.merged }}
+          PUBLISHED: ${{ steps.publish.outputs.published }}
           SNAPSHOTS: "WR ${{ steps.snap.outputs.wr }}, CR ${{ steps.snap.outputs.cr }}, NTES ${{ steps.snap.outputs.ntes || 'none' }}"
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
@@ -157,6 +219,9 @@ jobs:
               print(f"- Release `{env('TAG')}`: {what} ([run and artifact]({env('RUN_URL')}))")
           else:
               print(f"- No release was built ([run]({env('RUN_URL')}))")
+          if env("PUBLISHED"):
+              print("- Published as a GitHub Release" if env("PUBLISHED") == "true"
+                    else "- Not published: the latest GitHub Release already holds this data")
           print(f"- MERGE_YATRI_PLATFORMS: {env('MERGE')}")
           print(f"- Yatri fetch: {env('YATRI') or 'not run'}; platforms gate: {env('PLATFORMS') or 'not run'}")
           try:

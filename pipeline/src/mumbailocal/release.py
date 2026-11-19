@@ -38,6 +38,17 @@ class LocalOnlyData(Exception):
     pass
 
 
+def data_sha256(db: sqlite3.Connection) -> str:
+    """Hash of the database's content without its build time, so rebuilding the
+    same sources gives the same value and publishing can skip unchanged data."""
+    h = hashlib.sha256()
+    for line in db.iterdump():
+        if not line.startswith("INSERT INTO \"meta\" VALUES('built_at',"):
+            h.update(line.encode())
+            h.update(b"\n")
+    return h.hexdigest()
+
+
 def _effective_from(meta: dict[str, str], line: str) -> str | None:
     """Release folder name of the line's source PDFs is its w.e.f. date."""
     src = meta.get(f"{line.lower()}_source_dir")
@@ -66,6 +77,7 @@ def make_release(db_path: Path, out_dir: Path, tag: str | None = None, local: bo
         "trains": db.execute("SELECT COUNT(*) FROM train").fetchone()[0],
         "stations": db.execute("SELECT COUNT(*) FROM line_station").fetchone()[0],
     }
+    content = data_sha256(db)
     db.close()
 
     content_hash = hashlib.sha256(raw).hexdigest()
@@ -98,6 +110,8 @@ def make_release(db_path: Path, out_dir: Path, tag: str | None = None, local: bo
             "raw_size": len(raw),
             "raw_sha256": content_hash,
         },
+        # Same data gives the same value whenever it was built (raw_sha256 changes with built_at).
+        "data_sha256": content,
     }
     (rel / "manifest.json").write_text(json.dumps(manifest, indent=1))
     return rel

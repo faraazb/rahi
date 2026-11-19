@@ -86,6 +86,18 @@ SHA-256 there, and the service worker (the offline app shell) only runs on HTTPS
 To try the update path, run `mise run release -- --tag <new-tag>` while the app is open, then
 use Settings → Offline timetable → Check for updates.
 
-Production hosting: GitHub Release downloads send no CORS header, so a page on GitHub Pages cannot
-fetch them. The workflow should publish the release folder to Pages next to the app and keep the
-Release as the archive. Point `VITE_DATA_MANIFEST_URL` at the Pages copy.
+## Publishing
+
+Merging to `main` publishes (`.github/workflows/publish.yml`):
+
+1. If the timetable inputs changed (a merged watcher PR, a parser change), `yatri-platforms.yml` rebuilds
+   the database and creates a **GitHub Release** `data-<date>-<hash>` marked latest, holding
+   `manifest.json` and `mumbai-local.sqlite.gz`. It skips publishing when the latest release already
+   holds the same data (`data_sha256` in the manifest ignores the build time).
+2. The app is built with `BASE_PATH=/rahi` and deployed to **GitHub Pages** with the latest release's
+   files at `data/latest/`, which is where the app reads them (`VITE_DATA_MANIFEST_URL`). GitHub Release
+   downloads send no CORS header, so a browser cannot fetch them directly; the Release is the archive.
+
+Pages is off until the repository variable `DEPLOY_PAGES` is `true` and Settings → Pages → Source is
+"GitHub Actions" (a private repository needs a paid plan for Pages). Run it by hand from
+Actions → Publish.
