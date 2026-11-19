@@ -8,10 +8,15 @@
 #          creates a GitHub Release marked latest unless the latest release
 #          already holds the same data. MERGE_YATRI_PLATFORMS (Act environment)
 #          still decides whether Yatri's layers are in it.
-#   pages  builds the app (app/) and deploys it to GitHub Pages with the latest
-#          release's files at data/latest/. Phones read the timetable from there:
-#          GitHub Release downloads send no CORS header, so a browser cannot fetch
-#          them directly (see pipeline/src/mumbailocal/release.py).
+#   pages  builds the app (app/) and deploys it to GitHub Pages with data/ rebuilt
+#          from the GitHub Releases (Pages keeps nothing between deploys): the
+#          latest release, the one before it and the newest of each schema, each in
+#          its own data/<tag>/ folder, plus pointers (data/latest/,
+#          data/schema-<n>/) and data/index.json listing every release. See
+#          pipeline/src/mumbailocal/pages_data.py. Phones read the timetable from
+#          there: GitHub Release downloads send no CORS header, so a browser cannot
+#          fetch them directly. To roll back, mark an older release "latest" on
+#          GitHub and run this workflow with data off.
 #
 # Pages is off until the repository variable DEPLOY_PAGES is "true". It needs
 # Settings -> Pages -> Source: GitHub Actions, which a private repository only
@@ -112,21 +117,29 @@ jobs:
         working-directory: app
         env:
           BASE_PATH: /${{ github.event.repository.name }}
-          VITE_DATA_MANIFEST_URL: /${{ github.event.repository.name }}/data/latest/manifest.json
+          VITE_DATA_ROOT: /${{ github.event.repository.name }}/data
         run: |
           npm ci
           npm run build
 
-      - name: Add the latest timetable release
+      - name: Add the timetable releases
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          tag=$(gh release view --json tagName --jq .tagName)
-          mkdir -p app/build/data/latest
-          gh release download "$tag" --dir app/build/data/latest \
-            --pattern manifest.json --pattern mumbai-local.sqlite.gz
-          echo "Serving timetable $tag at data/latest/" | tee -a "$GITHUB_STEP_SUMMARY"
+          rel="$RUNNER_TEMP/releases"
+          latest=$(gh release view --json tagName --jq .tagName)
+          # Every release's manifest (small), for index.json and choosing what to serve.
+          gh release list --limit 1000 --exclude-drafts --json tagName --jq '.[].tagName | select(startswith("data-"))' |
+            while read -r tag; do
+              gh release download "$tag" --pattern manifest.json --dir "$rel/$tag"
+            done
+          for tag in $(uv run --project pipeline python -m mumbailocal.pages_data serve "$rel" --latest "$latest"); do
+            gh release download "$tag" --pattern mumbai-local.sqlite.gz --dir "$rel/$tag"
+          done
+          pointers=$(uv run --project pipeline python -m mumbailocal.pages_data build "$rel" app/build/data \
+            --latest "$latest" --repo "$GH_REPO")
+          echo "Timetable on Pages: $pointers" | tee -a "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-pages-artifact@v3
         with:

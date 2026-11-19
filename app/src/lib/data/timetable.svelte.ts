@@ -7,7 +7,7 @@
  *  then swapped in and stored. A failed or partial download never replaces
  *  a working timetable. */
 import type { Database } from 'sql.js';
-import { DATA_MANIFEST_URL, SUPPORTED_SCHEMA, UPDATE_CHECK_EVERY_MS } from '#lib/config.ts';
+import { DATA_MANIFEST_URLS, SUPPORTED_SCHEMA, UPDATE_CHECK_EVERY_MS } from '#lib/config.ts';
 import { isManifest, type Manifest } from './manifest';
 import { all, openDatabase } from './sqlite';
 import { sha256 } from './sha256';
@@ -94,8 +94,14 @@ class Timetable {
 		}
 		this.update = { state: 'checking' };
 		try {
-			const res = await fetch(DATA_MANIFEST_URL, { cache: 'no-store' });
-			if (!res.ok) throw new Error(`manifest: HTTP ${res.status}`);
+			let res: Response | undefined;
+			let manifestUrl = DATA_MANIFEST_URLS[0];
+			for (const url of DATA_MANIFEST_URLS) {
+				manifestUrl = url;
+				res = await fetch(url, { cache: 'no-store' });
+				if (res.status !== 404) break;
+			}
+			if (!res?.ok) throw new Error(`manifest: HTTP ${res?.status}`);
 			const manifest: unknown = await res.json();
 			if (!isManifest(manifest)) throw new Error('manifest is not in the expected format');
 			markChecked();
@@ -108,7 +114,7 @@ class Timetable {
 				return;
 			}
 			// Relative to where the manifest really came from (after redirects).
-			const dbUrl = new URL(manifest.db.url, res.url || new URL(DATA_MANIFEST_URL, location.href));
+			const dbUrl = new URL(manifest.db.url, res.url || new URL(manifestUrl, location.href));
 			this.update = { state: 'downloading', received: 0, total: manifest.db.size };
 			const dbRes = await fetch(dbUrl, { cache: 'no-cache' });
 			if (!dbRes.ok) throw new Error(`timetable download: HTTP ${dbRes.status}`);

@@ -94,9 +94,22 @@ Merging to `main` publishes (`.github/workflows/publish.yml`):
    the database and creates a **GitHub Release** `data-<date>-<hash>` marked latest, holding
    `manifest.json` and `mumbai-local.sqlite.gz`. It skips publishing when the latest release already
    holds the same data (`data_sha256` in the manifest ignores the build time).
-2. The app is built with `BASE_PATH=/rahi` and deployed to **GitHub Pages** with the latest release's
-   files at `data/latest/`, which is where the app reads them (`VITE_DATA_MANIFEST_URL`). GitHub Release
-   downloads send no CORS header, so a browser cannot fetch them directly; the Release is the archive.
+2. The app is built with `BASE_PATH=/rahi` and deployed to **GitHub Pages**. Pages keeps nothing between
+   deploys, so `data/` is rebuilt from the Releases each time (`mumbailocal.pages_data`):
+
+   ```
+   data/<tag>/manifest.json + mumbai-local.sqlite.gz   one folder per served release, never changed
+   data/latest/manifest.json                           pointer (db.url = ../<tag>/...)
+   data/schema-<n>/manifest.json                       newest release of each schema
+   data/index.json                                     every release, with its GitHub Release link
+   ```
+
+   Served: the latest release, the one before it (for updates in flight during a deploy) and the
+   newest of each schema. The app reads `data/schema-<newest it supports>/`, falling back to
+   `data/latest/`, so builds still cached on phones keep getting data they can read after a schema
+   change. Versioned folders mean the CDN can never pair a new manifest with an old database. GitHub
+   Release downloads send no CORS header, so a browser cannot fetch them directly; the Releases are
+   the archive. To roll back, mark an older release "latest" on GitHub and run Publish with data off.
 
 Pages is off until the repository variable `DEPLOY_PAGES` is `true` and Settings → Pages → Source is
 "GitHub Actions" (a private repository needs a paid plan for Pages). Run it by hand from
