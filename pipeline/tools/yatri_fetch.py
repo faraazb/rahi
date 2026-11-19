@@ -133,9 +133,13 @@ def login(cache: Path, attempts: int) -> list[str]:
     if email and aas:
         log(f"using your Google account {email}")
         return ["-e", email, "-t", aas]
-    url = os.environ.get("DISPENSER_URL")
-    ua = os.environ.get("DISPENSER_USER_AGENT")
+    # Pasted secrets often carry a trailing newline or quotes; either makes the dispenser refuse.
+    url = (os.environ.get("DISPENSER_URL") or "").strip().strip("'\"")
+    ua = (os.environ.get("DISPENSER_USER_AGENT") or "").strip().strip("'\"")
     if url and ua:
+        shape = "looks like <package>-<version>-<code>" if re.fullmatch(r"[\w.]+-[\w.]+-\d+", ua) \
+            else "does NOT look like <package>-<version>-<code>"
+        log(f"dispenser login: user agent of {len(ua)} characters, {shape}")
         email, token = dispensed_login(cache, url, ua, attempts)
         return ["-e", email, "--auth-token", token]
     raise LoginFailed(
