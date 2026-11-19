@@ -7,7 +7,7 @@
   mumbailocal ntes <raw-dir> [same options]        parse saved NTES pages
   mumbailocal build --wr <pdf-dir> --cr <pdf-dir> [--ntes <raw-dir>] [same options]   one DB
   mumbailocal platforms --db out.sqlite --yatri yatri.db [--stats s.json] [--strict]
-  mumbailocal release --db out.sqlite --out <dir> [--tag T] [--local]
+  mumbailocal release --db out.sqlite --out <dir> [--tag T] [--local | --merge-layers]
 
 --strict refuses to write the database when the release gate says HOLD
 (exit status 2), so a layout change can never replace good data with bad.
@@ -190,7 +190,8 @@ def cmd_platforms(args: argparse.Namespace) -> int:
 
 def cmd_release(args: argparse.Namespace) -> int:
     try:
-        rel = release.make_release(Path(args.db), Path(args.out), args.tag, local=args.local)
+        rel = release.make_release(Path(args.db), Path(args.out), args.tag, local=args.local,
+                                   merge_layers=args.merge_layers)
     except release.LocalOnlyData as e:
         print(f"refusing to release: {e}")
         return 2
@@ -241,6 +242,8 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--tag", help="default: data-<YYYYMMDD>-<sha8 of the database>")
     r.add_argument("--local", action="store_true",
                    help="allow local-only layers (platforms); such a release must never be published")
+    r.add_argument("--merge-layers", action="store_true",
+                   help="allow local-only layers in a publishable release; only when publishing them is approved")
     r.set_defaults(func=cmd_release)
     q = sub.add_parser("platforms", help="add Yatri's platforms to a built database (local only)")
     q.add_argument("--db", required=True, help="built timetable database to add the platform table to")

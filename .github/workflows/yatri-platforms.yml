@@ -1,67 +1,94 @@
-# Builds the platforms layer from the Yatri app: fetch the APK from Google Play,
-# extract its database, match platforms and door sides onto our timetable, and
-# report coverage.
+# Builds the timetable database from the newest snapshots, tries to add Yatri's
+# platforms, door sides and rake links to it, and packages a release.
 #
-# LOCAL ONLY for now. Yatri's data may not be redistributed until CDP India /
-# Central Railway agree, so this workflow:
-#   - runs only by hand (no schedule yet; add one when publishing is agreed);
-#   - uploads NOTHING: no artifacts (anyone signed in to GitHub can download
-#     a public repo's artifacts) and no actions/cache (pull requests from forks
-#     can restore the default branch's caches). The APK is fetched fresh on each
-#     run and everything is discarded with the runner;
-#   - writes only aggregate counts to the job summary.
-# The `publish` input marks where publishing will go; it refuses to run today.
+# Started by the timetable watcher (watch/publish.sh) on the watch/<railway>
+# branch whenever it pushes a new snapshot, or by hand.
 #
-# Google Play login, from repository secrets (see pipeline/tools/yatri_fetch.py):
+# Whether Yatri's layers go into the release is decided by the variable
+# MERGE_YATRI_PLATFORMS in the "Act" environment (Settings -> Environments -> Act
+# -> Environment variables). Yatri's data may not be redistributed until CDP
+# India / Central Railway agree, so:
+#   - unset or anything but "true": the release holds official data only. Yatri
+#     is still fetched and matched, but only aggregate counts leave the runner
+#     (job summary and PR comment); its tables are discarded with the runner.
+#   - "true": the release carries the platform and rake_next tables
+#     (manifest layers marked local_only: false).
+# A Yatri failure (login, download, or the platforms gate) never fails the run:
+# the release then holds official data only and the summary says why.
+#
+# The release folder is uploaded as a workflow artifact. Publishing it to a
+# GitHub Release / Pages is not wired up yet.
+#
+# Google Play login, from secrets in the "Act" environment (see pipeline/tools/yatri_fetch.py):
 #   GOOGLE_EMAIL + GOOGLE_AAS_TOKEN        your own account, or
 #   DISPENSER_URL + DISPENSER_USER_AGENT   a token dispenser such as Aurora's.
 # GitHub runners share datacenter IPs, so Google Play and dispensers rate-limit
-# them more often than a home connection; the fetch retries with backoff and
-# the run fails cleanly (exit 3) when login is impossible.
+# them more often than a home connection; the fetch retries with backoff.
 
-name: Yatri platforms (local only)
+name: Yatri platforms
 
 on:
   workflow_dispatch:
     inputs:
-      wr_release:
-        description: WR timetable folder under data/raw/wr/ to match against
-        default: "2026-09-01"
-        required: true
-      publish:
-        description: Publish the platforms layer (not approved yet; leave off)
-        type: boolean
-        default: false
+      wr:
+        description: WR folder under data/raw/wr/ (default the newest)
+        required: false
+      cr:
+        description: CR folder under data/raw/cr/ (default the newest)
+        required: false
+      ntes:
+        description: NTES folder under data/raw/ntes/ (default the newest)
+        required: false
 
 permissions:
   contents: read
+  pull-requests: write # summary comment on the watcher's PR
 
 concurrency:
-  group: yatri-platforms
-  cancel-in-progress: false
+  group: yatri-platforms-${{ github.ref }}
+  cancel-in-progress: true # a newer snapshot on the same branch supersedes this run
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: Act # Google Play secrets and the MERGE_YATRI_PLATFORMS switch
     timeout-minutes: 45
+    env:
+      MERGE: ${{ vars.MERGE_YATRI_PLATFORMS == 'true' }}
     steps:
-      - name: Refuse to publish
-        if: ${{ inputs.publish }}
-        run: |
-          echo "::error::Publishing Yatri's platforms is not approved yet (see docs/observations.md). Nothing was run."
-          exit 1
-
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: jdx/mise-action@v2
         with:
           install: true
           cache: true # tool binaries only (python, uv, node, apkeep), never data
 
-      - name: Parse the WR timetable
-        run: mise run wr -- "data/raw/wr/${{ inputs.wr_release }}"
+      - name: Pick snapshots
+        id: snap
+        env:
+          IN_WR: ${{ inputs.wr }}
+          IN_CR: ${{ inputs.cr }}
+          IN_NTES: ${{ inputs.ntes }}
+        run: |
+          pick() { # <railway> <input>: the given folder, else the newest dated one
+            if [ -n "$2" ]; then echo "data/raw/$1/$2"
+            else ls -d data/raw/"$1"/*/ 2>/dev/null | sort | tail -n1 | sed 's:/$::'; fi
+          }
+          wr=$(pick wr "$IN_WR"); cr=$(pick cr "$IN_CR"); ntes=$(pick ntes "$IN_NTES")
+          for d in "$wr" "$cr"; do [ -d "$d" ] || { echo "::error::missing snapshot folder '$d'"; exit 1; }; done
+          echo "wr=$wr" >> "$GITHUB_OUTPUT"; echo "cr=$cr" >> "$GITHUB_OUTPUT"; echo "ntes=$ntes" >> "$GITHUB_OUTPUT"
+          echo "Snapshots: WR $wr, CR $cr, NTES ${ntes:-none}"
+
+      - name: Build the official database
+        run: |
+          ntes_arg=()
+          [ -n "${{ steps.snap.outputs.ntes }}" ] && ntes_arg=(--ntes "${{ steps.snap.outputs.ntes }}")
+          mise run build -- --wr "${{ steps.snap.outputs.wr }}" --cr "${{ steps.snap.outputs.cr }}" "${ntes_arg[@]}"
+          cp pipeline/build/mumbai-local.sqlite pipeline/build/official.sqlite
 
       - name: Fetch Yatri and extract its database
+        id: yatri
+        continue-on-error: true
         env:
           GOOGLE_EMAIL: ${{ secrets.GOOGLE_EMAIL }}
           GOOGLE_AAS_TOKEN: ${{ secrets.GOOGLE_AAS_TOKEN }}
@@ -72,26 +99,75 @@ jobs:
           mise run yatri -- --attempts 4
           code=$?
           if [ "$code" = 3 ]; then
-            echo "::error::Google Play login failed (dispenser down or rate-limited, or the account token is invalid). Try again later."
+            echo "::warning::Google Play login failed (dispenser down or rate-limited, or the account token is invalid)."
           fi
           exit $code
 
       - name: Match platforms (gated)
+        id: platforms
+        if: steps.yatri.outcome == 'success'
+        continue-on-error: true
         run: mise run platforms
+
+      - name: Package the release
+        id: release
+        run: |
+          if [ "$MERGE" = true ] && [ "${{ steps.platforms.outcome }}" = success ]; then
+            db=pipeline/build/mumbai-local.sqlite; flags=(--merge-layers); merged=true
+          else
+            db=pipeline/build/official.sqlite; flags=(); merged=false
+            if [ "$MERGE" = true ]; then
+              echo "::warning::MERGE_YATRI_PLATFORMS is true but Yatri's layers were not built; releasing official data only."
+            fi
+          fi
+          rm -rf pipeline/build/releases
+          uv run --project pipeline mumbailocal release --db "$db" --out pipeline/build/releases "${flags[@]}"
+          echo "dir=$(ls -d pipeline/build/releases/*/)" >> "$GITHUB_OUTPUT"
+          echo "tag=$(basename "$(ls -d pipeline/build/releases/*/)")" >> "$GITHUB_OUTPUT"
+          echo "merged=$merged" >> "$GITHUB_OUTPUT"
+
+      - name: Upload the release
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.release.outputs.tag }}
+          path: ${{ steps.release.outputs.dir }}
+          retention-days: 30
 
       - name: Summary
         if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          YATRI: ${{ steps.yatri.outcome }}
+          PLATFORMS: ${{ steps.platforms.outcome }}
+          TAG: ${{ steps.release.outputs.tag }}
+          MERGED: ${{ steps.release.outputs.merged }}
+          SNAPSHOTS: "WR ${{ steps.snap.outputs.wr }}, CR ${{ steps.snap.outputs.cr }}, NTES ${{ steps.snap.outputs.ntes || 'none' }}"
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          stats=pipeline/build/platforms.stats.json
-          [ -f "$stats" ] || { echo "No platforms stats were produced." >> "$GITHUB_STEP_SUMMARY"; exit 0; }
-          python3 - "$stats" temp.fignore/yatri/yatri.json >> "$GITHUB_STEP_SUMMARY" <<'EOF'
-          import json, sys
-          s = json.load(open(sys.argv[1]))
+          out="$RUNNER_TEMP/summary.md"
+          python3 - pipeline/build/platforms.stats.json temp.fignore/yatri/yatri.json > "$out" <<'EOF'
+          import json, os, sys
+          env = os.environ.get
+          print("## Timetable build\n")
+          print(f"- Snapshots: {env('SNAPSHOTS')}")
+          if env("TAG"):
+              merged = env("MERGED") == "true"
+              what = "official data + Yatri platforms and rake links" if merged else "official data only"
+              print(f"- Release `{env('TAG')}`: {what} ([run and artifact]({env('RUN_URL')}))")
+          else:
+              print(f"- No release was built ([run]({env('RUN_URL')}))")
+          print(f"- MERGE_YATRI_PLATFORMS: {env('MERGE')}")
+          print(f"- Yatri fetch: {env('YATRI') or 'not run'}; platforms gate: {env('PLATFORMS') or 'not run'}")
+          try:
+              s = json.load(open(sys.argv[1]))
+          except OSError:
+              sys.exit(0)
           try:
               y = json.load(open(sys.argv[2]))
           except OSError:
               y = {}
-          print("## Yatri platforms (local only, not published)\n")
+          print("\n### Yatri match\n")
           print(f"- Yatri version: {y.get('version') or 'unknown'}; data updated {y.get('data_updated_at') or 'unknown'}")
           print(f"- Stops with a platform: {s['matched']:,} of {s['stops']:,} ({s['coverage']:.1%})")
           print(f"- Missing: no platform in Yatri {s['no_platform']:,}, time differs {s['time_mismatch']:,}, "
@@ -100,3 +176,6 @@ jobs:
                 f"{s['door_side_conflicting_groups']} of {s['door_side_groups']} platform groups disagree")
           print("- Weakest stations: " + ", ".join(f"{c} {r:.0%}" for c, r, n in s["weakest_stations"][:6]))
           EOF
+          cat "$out" >> "$GITHUB_STEP_SUMMARY"
+          pr=$(gh pr list --head "$GITHUB_REF_NAME" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$pr" ]; then gh pr comment "$pr" --body-file "$out" >/dev/null && echo "Commented on PR #$pr"; fi

@@ -40,10 +40,11 @@ mise run release                               # package it as pipeline/build/re
 mise run testbench                             # browse the parsed DB at http://127.0.0.1:8000
 ```
 
-## Platforms (local only)
+## Platforms (from Yatri, off by default)
 
 No official source publishes platform numbers. Local builds can add them from the database bundled
-in the Yatri app; public releases never carry them until redistribution is agreed.
+in the Yatri app; releases carry them only when `MERGE_YATRI_PLATFORMS` is turned on, which waits
+until redistribution is agreed.
 
 ```sh
 mise run yatri -- --apk temp.fignore/apks/yatri/base.apk   # extract from an APK you have, or
@@ -56,8 +57,15 @@ mise run release-local                          # `mise run release` refuses a D
 `pipeline/tools/yatri_fetch.py` logs in to Google Play with your own account (`GOOGLE_EMAIL` and
 `GOOGLE_AAS_TOKEN`) or a token dispenser (`DISPENSER_URL` and `DISPENSER_USER_AGENT`). It downloads
 with apkeep (pinned in `mise.toml`) only when Play has a new version, and extracts
-`assets/databases/yatri.db` into `temp.fignore/yatri/`. The manual GitHub workflow
-`.github/workflows/yatri-platforms.yml` runs the same steps from repository secrets and uploads nothing.
+`assets/databases/yatri.db` into `temp.fignore/yatri/`.
+
+In CI, `.github/workflows/yatri-platforms.yml` builds the database from the newest snapshots, tries the
+same Yatri steps, and uploads a release as a workflow artifact. The timetable watcher starts it on its
+`watch/<railway>` branch whenever it pushes a new snapshot; it can also be run by hand. It reads the
+Google Play secrets and the switch `MERGE_YATRI_PLATFORMS` from the `Act` environment: only when the
+switch is `true` does the release carry the platform and rake tables (`mumbailocal release
+--merge-layers`). Otherwise the release is official data only and Yatri's tables stay on the runner.
+A Yatri failure never blocks the official release.
 
 ## Running the app locally
 

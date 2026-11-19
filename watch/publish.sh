@@ -2,7 +2,8 @@
 # Turn one watch.py run into GitHub state. Runs inside the Action after watch.py.
 #
 #   errors   -> open (or quietly update) one issue per railway; close it on a clean run
-#   changes  -> commit state + snapshot to branch watch/<railway>, open or update one PR
+#   changes  -> commit state + snapshot to branch watch/<railway>, open or update one PR,
+#               and start the Yatri platforms build (.github/workflows/yatri-platforms.yml) on it
 #
 # Idempotent: the daily run force-pushes only when the branch's content would change,
 # and a PR you closed without merging is not reopened for the same content.
@@ -63,6 +64,13 @@ else
   git push -q --force origin "$branch"
   head_sha=$(git rev-parse HEAD)
   summary "Pushed $branch ($head_sha)."
+  # Build the database (and try Yatri's platforms) on the new snapshot. Pushes made
+  # with GITHUB_TOKEN trigger no workflows, but workflow_dispatch is allowed.
+  if gh workflow run yatri-platforms.yml --ref "$branch"; then
+    summary "Started the Yatri platforms build on $branch."
+  else
+    summary "Could not start the Yatri platforms build on $branch; run it by hand."
+  fi
 fi
 
 title="$name timetable update: $counts"

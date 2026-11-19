@@ -28,8 +28,9 @@ from pathlib import Path
 DB_ASSET = "mumbai-local.sqlite.gz"
 
 # Tables built from sources we may not redistribute yet (see platforms.py, rakes.py).
-# A database carrying one is released only when the release is marked local,
-# so it can never reach a public GitHub Release by accident.
+# A database carrying one is released only when the release is marked local, or
+# when the caller passes merge_layers (the repository's MERGE_YATRI_PLATFORMS switch
+# in CI), so it can never reach a public GitHub Release by accident.
 LOCAL_ONLY_TABLES = ("platform", "rake_next")
 
 
@@ -43,17 +44,19 @@ def _effective_from(meta: dict[str, str], line: str) -> str | None:
     return Path(src).name if src else None
 
 
-def make_release(db_path: Path, out_dir: Path, tag: str | None = None, local: bool = False) -> Path:
+def make_release(db_path: Path, out_dir: Path, tag: str | None = None, local: bool = False,
+                 merge_layers: bool = False) -> Path:
     raw = db_path.read_bytes()
     db = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     meta = dict(db.execute("SELECT key, value FROM meta"))
     tables = {n for (n,) in db.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
     local_layers = [t for t in LOCAL_ONLY_TABLES if t in tables]
-    if local_layers and not local:
+    if local_layers and not (local or merge_layers):
         db.close()
         raise LocalOnlyData(
             f"{db_path} carries local-only data ({', '.join(local_layers)}); "
-            "rebuild without it, or pass --local for a release that stays on this machine")
+            "rebuild without it, pass --local for a release that stays on this machine, "
+            "or --merge-layers once publishing it is approved")
     lines = [
         {"code": code, "name": name, "effective_from": _effective_from(meta, code),
          "sources": json.loads(meta.get(f"{code.lower()}_sources", "{}"))}
@@ -83,7 +86,9 @@ def make_release(db_path: Path, out_dir: Path, tag: str | None = None, local: bo
         "lines": lines,
         "counts": counts,
         # Optional layers inside the database; the app checks for the tables itself.
-        "layers": {t: {"source": meta.get("platforms_source"), "local_only": True} for t in local_layers},
+        # local_only stays true unless the layers were explicitly approved for merging.
+        "layers": {t: {"source": meta.get("platforms_source"), "local_only": not merge_layers}
+                   for t in local_layers},
         "local": local,
         "db": {
             "url": DB_ASSET,

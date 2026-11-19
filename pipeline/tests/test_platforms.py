@@ -142,6 +142,15 @@ def test_release_refuses_local_only_layer_unless_local(dbs, tmp_path):
     assert meta["platforms_local_only"] == "1" and meta["platforms_version"] == "9.9"
 
 
+def test_release_merges_layers_only_when_asked(dbs, tmp_path):
+    ours, yatri = dbs
+    make_yatri(yatri).close()
+    platforms.add_to_db(ours, yatri)
+    rel = make_release(ours, tmp_path / "rel", tag="merged", merge_layers=True)
+    m = json.loads((rel / "manifest.json").read_text())
+    assert m["local"] is False and m["layers"]["platform"]["local_only"] is False
+
+
 # ---------------------------------------------------------------- rake links
 
 def add_turnarounds(ours_path, yatri_path):

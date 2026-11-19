@@ -20,10 +20,14 @@ watch/watch.py <railway>      fetch index pages (primary host, then old* mirror)
         └── added / modified / removed ─► full snapshot in data/raw/<railway>/<date>/
                                           + updated state, on branch watch/<railway>
                                           ──► one PR per railway, updated in place
+                                          ──► starts .github/workflows/yatri-platforms.yml on
+                                              that branch: build, Yatri platforms if
+                                              MERGE_YATRI_PLATFORMS allows, release artifact,
+                                              summary comment on the PR
 ```
 
-- **Merge the PR** to accept the new snapshot. The parser, the validation report and the
-  release step will be added to this PR flow later.
+- **Merge the PR** to accept the new snapshot. Before that, the build run started on the branch
+  comments on the PR with the release it built and how well Yatri's platforms matched.
 - **Close the PR without merging** to dismiss it. It reopens only if the source changes again.
 - The snapshot folder is named after the newest `Last-Modified` among the changed PDFs, so
   daily reruns do not create new folders.
@@ -55,5 +59,5 @@ without merging afterwards.
 
 - Settings → Actions → General → Workflow permissions: **Allow GitHub Actions to create and
   approve pull requests**.
-- PRs opened with the default `GITHUB_TOKEN` do not trigger other workflows. When parser CI
-  is added, the watcher has to run the parser itself or use a GitHub App token.
+- PRs opened with the default `GITHUB_TOKEN` do not trigger other workflows, so the watcher
+  starts the build with `gh workflow run` (workflow_dispatch is exempt; needs `actions: write`).
