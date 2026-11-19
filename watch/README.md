@@ -31,15 +31,22 @@ watch/watch.py <railway>      fetch index pages (primary host, then old* mirror)
   started on the branch comments on the PR with the release it built and how well Yatri's
   platforms matched.
 - **Close the PR without merging** to dismiss it. It reopens only if the source changes again.
-- The snapshot folder is named after the newest `Last-Modified` among the changed PDFs, so
-  daily reruns do not create new folders.
+- Each PDF is saved under the sheet name the parsers expect (`dn.pdf`, `hb_up.pdf`, ...), chosen
+  by the first matching regex in the `sheets` rules of `sources.json`. PDFs that are not sheets
+  (old Harbour copies on the WR page, the abbreviations legend), or that match no rule, go to
+  `other/`, which the parsers do not read. Unmatched PDFs and two PDFs claiming one sheet are
+  listed under **Needs attention** in the PR. `SOURCES.txt` keeps each file's original URL; the
+  pipeline reads the w.e.f. date from it (`pipeline/src/mumbailocal/editions.py`).
+- The snapshot folder is named after the newest `Last-Modified` among the changed PDFs, moved to
+  the day after the newest existing folder if it would sort before it (the build uses the newest
+  folder). Daily reruns therefore keep the same folder name.
 - Files are keyed by URL path, so a switch between `wr.` and `oldwr.` is not reported as a change.
 
 ## Files
 
 | File | Purpose |
 |---|---|
-| `sources.json` | Pages to watch, host fallback order, minimum PDF count (detects layout changes) |
+| `sources.json` | Pages to watch, host fallback order, minimum PDF count (detects layout changes), and the `sheets` rules that name each PDF |
 | `state/<railway>.json` | Last accepted state: per PDF its ETag, Last-Modified, size, sha256 and first-seen date |
 | `watch.py` | The check (Python standard library only) |
 | `publish.sh` | Turns a run into a branch, PR and issue (uses `git`, `gh`, `jq`) |

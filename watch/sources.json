@@ -1,7 +1,10 @@
 {
   "wr": {
     "name": "Western Railway",
-    "hosts": ["wr.indianrailways.gov.in", "oldwr.indianrailways.gov.in"],
+    "hosts": [
+      "wr.indianrailways.gov.in",
+      "oldwr.indianrailways.gov.in"
+    ],
     "pages": [
       {
         "id": "wr-suburban",
@@ -9,11 +12,41 @@
         "path": "/view_section.jsp?lang=0&id=0,6,458",
         "min_pdfs": 5
       }
+    ],
+    "sheets": [
+      {
+        "match": "HARBOUR",
+        "save_as": null,
+        "why": "WR's copy of Harbour trains; the CR Harbour sheets are used"
+      },
+      {
+        "match": "DAHANU",
+        "save_as": "drd.pdf"
+      },
+      {
+        "match": "(\\bDN\\b|DOWN).*\\bAC\\b|\\bAC\\b.*(\\bDN\\b|DOWN)",
+        "save_as": "ac_dn.pdf"
+      },
+      {
+        "match": "\\bUP\\b.*\\bAC\\b|\\bAC\\b.*\\bUP\\b",
+        "save_as": "ac_up.pdf"
+      },
+      {
+        "match": "(\\bDN\\b|DOWN)",
+        "save_as": "dn.pdf"
+      },
+      {
+        "match": "\\bUP\\b",
+        "save_as": "up.pdf"
+      }
     ]
   },
   "cr": {
     "name": "Central Railway",
-    "hosts": ["cr.indianrailways.gov.in", "oldcr.indianrailways.gov.in"],
+    "hosts": [
+      "cr.indianrailways.gov.in",
+      "oldcr.indianrailways.gov.in"
+    ],
     "pages": [
       {
         "id": "cr-mumbai",
@@ -26,6 +59,61 @@
         "title": "CR Pune Suburban Time Table",
         "path": "/view_section.jsp?lang=0&id=0,5,2361",
         "min_pdfs": 2
+      }
+    ],
+    "sheets": [
+      {
+        "match": "ABBREVIATION",
+        "save_as": null,
+        "why": "legend, not a timetable"
+      },
+      {
+        "match": "HOLIDAY",
+        "save_as": "holidays.pdf"
+      },
+      {
+        "match": "15\\s*CAR",
+        "save_as": "main_15car.pdf"
+      },
+      {
+        "match": "\\bTHB\\b|TRANS[\\s-]*HARBOUR",
+        "save_as": "thb.pdf"
+      },
+      {
+        "match": "(\\bHB\\b|HARBOUR).*\\bAC\\b|\\bAC\\b.*(\\bHB\\b|HARBOUR)",
+        "save_as": "hb_ac.pdf"
+      },
+      {
+        "match": "(\\bDN\\b|DOWN).*(\\bHB\\b|HARBOUR)|(\\bHB\\b|HARBOUR).*(\\bDN\\b|DOWN)",
+        "save_as": "hb_dn.pdf"
+      },
+      {
+        "match": "\\bUP\\b.*(\\bHB\\b|HARBOUR)|(\\bHB\\b|HARBOUR).*\\bUP\\b",
+        "save_as": "hb_up.pdf"
+      },
+      {
+        "match": "PORT|URAN",
+        "save_as": "port.pdf"
+      },
+      {
+        "match": "LNL[\\s-]*PUNE",
+        "save_as": "lnl_pune.pdf"
+      },
+      {
+        "match": "PUNE[\\s-]*LNL",
+        "save_as": "pune_lnl.pdf"
+      },
+      {
+        "match": "\\bAC\\b",
+        "save_as": "ac.pdf"
+      },
+      {
+        "match": "(\\bDN\\b|DOWN)",
+        "save_as": "main_dn.pdf"
+      },
+      {
+        "match": "\\bUP\\b",
+        "save_as": "main_up.pdf"
       }
     ]
   }

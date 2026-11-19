@@ -11,6 +11,10 @@ For one railway (wr / cr) it:
      switch is not mistaken for a new timetable;
   4. if anything was added, removed or modified, downloads a full snapshot of the
      railway's current PDFs into data/raw/<railway>/<date>/ and rewrites the state.
+     Each PDF is saved under the sheet name the parser expects (dn.pdf, hb_up.pdf,
+     ...), chosen by the "sheets" rules in sources.json; PDFs that are not a sheet,
+     or that no rule matches, go to other/ where the parser does not look.
+     SOURCES.txt keeps every file's original URL (the w.e.f. date is in its name).
 
 It never treats an unreachable page or a 404 PDF as "removed": failures are
 reported as errors and that page's previous state is kept.
@@ -29,6 +33,7 @@ import html.parser
 import json
 import os
 import pathlib
+import re
 import sys
 import time
 import urllib.error
@@ -162,6 +167,34 @@ def http_date(s: str | None) -> dt.date | None:
         return None
 
 
+def sheet_names(rules: list[dict], current: list[tuple[str, dict]]) -> tuple[dict[str, str], list[str], list[str]]:
+    """Where each live PDF is saved in the snapshot: {key: relative path}.
+
+    The first rule whose regex matches the PDF's website name decides; save_as null
+    means "not a sheet". Returns (paths, unclassified names, conflict notes)."""
+    paths: dict[str, str] = {}
+    unclassified: list[str] = []
+    claims: dict[str, list[dict]] = {}
+    for _, c in current:
+        rule = next((r for r in rules if re.search(r["match"], c["name"], re.IGNORECASE)), None)
+        if rule is None:
+            unclassified.append(c["name"])
+        if rule is None or not rule["save_as"]:
+            paths[c["key"]] = f"other/{c['name']}"
+        else:
+            claims.setdefault(rule["save_as"], []).append(c)
+    conflicts = []
+    for sheet, cs in claims.items():
+        cs.sort(key=lambda c: http_date(c["entry"].get("last_modified")) or dt.date.min, reverse=True)
+        paths[cs[0]["key"]] = sheet
+        for c in cs[1:]:
+            paths[c["key"]] = f"other/{c['name']}"
+        if len(cs) > 1:
+            conflicts.append(f"{len(cs)} PDFs look like `{sheet}`; kept the newest, `{cs[0]['name']}`, and moved "
+                             + ", ".join(f"`{c['name']}`" for c in cs[1:]) + " to other/.")
+    return paths, unclassified, conflicts
+
+
 def run(railway: str, sources: dict, state_path: pathlib.Path, snapshot_root: pathlib.Path,
         out: pathlib.Path, forget: list[str]) -> dict:
     cfg = sources[railway]
@@ -220,6 +253,7 @@ def run(railway: str, sources: dict, state_path: pathlib.Path, snapshot_root: pa
     removed = [r for r in rows if r["status"] == "removed"]
     changed = False
     snapshot_dir = None
+    saved_as, unclassified, conflicts = sheet_names(cfg.get("sheets", []), current)
     if suspects or removed:
         blobs: dict[str, bytes] = {}
         for pid, c in current:
@@ -250,26 +284,36 @@ def run(railway: str, sources: dict, state_path: pathlib.Path, snapshot_root: pa
             dates = [http_date(c["entry"]["last_modified"]) for _, c in current
                      if c["status"] in ("added", "modified")]
             dates = [d for d in dates if d]
-            snap = (max(dates) if dates else dt.date.today()).isoformat()
-            snapshot_dir = snapshot_root / railway / snap
+            snap = max(dates) if dates else dt.date.today()
+            # The build picks the newest folder, so a new snapshot must sort after every
+            # existing one, even when its PDFs' Last-Modified dates are older (they often
+            # are: hand-made folders are named by w.e.f. or download date).
+            existing = [dt.date.fromisoformat(d.name) for d in (snapshot_root / railway).glob("*")
+                        if d.is_dir() and re.fullmatch(r"\d{4}-\d{2}-\d{2}", d.name)]
+            if existing and snap <= max(existing):
+                snap = max(existing) + dt.timedelta(days=1)
+            snapshot_dir = snapshot_root / railway / snap.isoformat()
             snapshot_dir.mkdir(parents=True, exist_ok=True)
             lines = []
             for pid, c in current:
                 if c["key"] in blobs:
-                    (snapshot_dir / c["name"]).write_bytes(blobs[c["key"]])
-                    lines.append(f"{c['name']}\t{c['entry']['last_modified']}\t{c['entry']['sha256']}\t{c['url']}")
+                    target = snapshot_dir / saved_as[c["key"]]
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_bytes(blobs[c["key"]])
+                    lines.append(f"{saved_as[c['key']]}\t{c['entry']['last_modified']}\t{c['entry']['sha256']}\t{c['url']}")
             (snapshot_dir / "SOURCES.txt").write_text(
                 "# file\tLast-Modified\tsha256\turl\n" + "\n".join(sorted(lines)) + "\n")
 
     rows = [{"page": pid, "status": c["status"], "name": c["name"], "title": c["title"],
-             "url": c["url"], "entry": c["entry"]} for pid, c in current] + removed
+             "url": c["url"], "entry": c["entry"], "saved_as": saved_as.get(c["key"])}
+            for pid, c in current] + removed
 
     if changed:
         state_path.parent.mkdir(parents=True, exist_ok=True)
         state_path.write_text(json.dumps(new, indent=2, sort_keys=True, ensure_ascii=False) + "\n")
 
     result = {"railway": railway, "name": cfg["name"], "changed": changed, "errors": errors,
-              "notes": notes,
+              "notes": notes, "unclassified": unclassified, "conflicts": conflicts,
               "snapshot": str(snapshot_dir.relative_to(ROOT)) if snapshot_dir and snapshot_dir.is_relative_to(ROOT) else (str(snapshot_dir) if snapshot_dir else None),
               "counts": {s: sum(r["status"] == s for r in rows)
                          for s in ("added", "modified", "removed", "unchanged", "failed")}}
@@ -310,6 +354,11 @@ def report_md(result: dict, rows: list[dict], cfg: dict) -> str:
             out.append(f"\n<details><summary>{len(same)} unchanged</summary>\n")
             out += _table(same)
             out.append("\n</details>")
+    attention = [f"`{n}` matches no rule in `watch/sources.json`, so it was saved to other/ and the "
+                 "parser ignores it. If it is a timetable sheet, add a rule." for n in result["unclassified"]]
+    attention += result["conflicts"]
+    if attention:
+        out.append("\n### ⚠️ Needs attention\n" + "\n".join(f"- {a}" for a in attention))
     if result["notes"]:
         out.append("\n### Notes\n" + "\n".join(f"- {n}" for n in result["notes"]))
     if result["errors"]:
@@ -317,9 +366,9 @@ def report_md(result: dict, rows: list[dict], cfg: dict) -> str:
     out.append("""
 ### Review checklist
 - [ ] Changes look like a real timetable revision (new w.e.f. date / PTT number), not a re-upload
-- [ ] Parser run on the new snapshot *(not wired into this workflow yet)*
-- [ ] Validation report clean, or parser fixed on this branch
-- [ ] Merge to accept the new snapshot (merging is what publishes, once the release step exists)
+- [ ] Every timetable PDF was saved as a sheet ("Saved as" column; nothing under Needs attention)
+- [ ] The preview build on this branch passed (its summary is posted as a comment below)
+- [ ] Merge to accept the new snapshot: merging publishes it (GitHub Release, then Pages)
 
 <sub>This PR is updated in place by the daily watcher. Closing it without merging is fine:
 it will be reopened only if the source changes again.</sub>
@@ -328,14 +377,15 @@ it will be reopened only if the source changes again.</sub>
 
 
 def _table(rows: list[dict]) -> list[str]:
-    out = ["| Status | Link text | File | Last-Modified | Size | sha256 |", "|---|---|---|---|---|---|"]
+    out = ["| Status | Link text | File | Saved as | Last-Modified | Size | sha256 |", "|---|---|---|---|---|---|---|"]
     for r in rows:
         e = r["entry"]
         name = f"[{r['name']}]({r['url']})" if r["url"] else r["name"]
         size = f"{e['length'] / 1024:.0f} KiB" if e.get("length") else "?"
         sha = f"`{e['sha256'][:12]}`" if e.get("sha256") else ""
         title = (r["title"] or "").replace("|", "\\|")
-        out.append(f"| {ICON[r['status']]} | {title} | {name} | {e.get('last_modified') or '?'} | {size} | {sha} |")
+        saved = f"`{r['saved_as']}`" if r.get("saved_as") else ""
+        out.append(f"| {ICON[r['status']]} | {title} | {name} | {saved} | {e.get('last_modified') or '?'} | {size} | {sha} |")
     return out
 
 
