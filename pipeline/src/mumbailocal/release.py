@@ -50,9 +50,26 @@ def data_sha256(db: sqlite3.Connection) -> str:
 
 
 def _effective_from(meta: dict[str, str], line: str) -> str | None:
-    """Release folder name of the line's source PDFs is its w.e.f. date."""
+    """The line's w.e.f. date, recorded at build time (see editions.py). Databases
+    built before that fall back to the WR convention: folder named by its w.e.f."""
+    key = f"{line.lower()}_effective_from"
+    if key in meta:
+        return meta[key] or None
     src = meta.get(f"{line.lower()}_source_dir")
     return Path(src).name if src else None
+
+
+def _line_sources(meta: dict[str, str], line: str) -> dict[str, str]:
+    """The line's own source files and their sha256 (<line>_files picks them out of the
+    per-railway <railway>_sources); older databases only have the per-railway lists."""
+    files = meta.get(f"{line.lower()}_files")
+    if files is None:
+        return json.loads(meta.get(f"{line.lower()}_sources", "{}"))
+    every: dict[str, str] = {}
+    for key, value in meta.items():
+        if key.endswith("_sources"):
+            every |= json.loads(value)
+    return {f: every.get(f, "") for f in json.loads(files)}
 
 
 def make_release(db_path: Path, out_dir: Path, tag: str | None = None, local: bool = False,
@@ -70,7 +87,8 @@ def make_release(db_path: Path, out_dir: Path, tag: str | None = None, local: bo
             "or --merge-layers once publishing it is approved")
     lines = [
         {"code": code, "name": name, "effective_from": _effective_from(meta, code),
-         "sources": json.loads(meta.get(f"{code.lower()}_sources", "{}"))}
+         "as_of": meta.get(f"{code.lower()}_as_of") or None,
+         "sources": _line_sources(meta, code)}
         for code, name in db.execute("SELECT code, name FROM line ORDER BY id")
     ]
     counts = {

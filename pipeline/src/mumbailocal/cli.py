@@ -22,7 +22,7 @@ from collections import Counter
 from dataclasses import asdict
 from pathlib import Path
 
-from . import build_db, ntes as ntes_client, platforms, quality, release
+from . import build_db, editions, ntes as ntes_client, platforms, quality, release
 from .model import Diagnostics, Train
 from .sources import cr, ntes, wr
 
@@ -47,6 +47,18 @@ def _flat(by_line: dict[str, list[Train]]) -> list[Train]:
 def _sources(*dirs: Path) -> dict[str, str]:
     return {f"{d.parent.name}/{p.name}" if len(dirs) > 1 else p.name: hashlib.sha256(p.read_bytes()).hexdigest()
             for d in dirs for p in sorted(d.glob("*.pdf"))}
+
+
+def _wr_editions(d: Path) -> dict[str, str]:
+    return editions.meta(editions.line_editions(d, lambda name: "WR"))
+
+
+def _cr_editions(d: Path) -> dict[str, str]:
+    return editions.meta(editions.line_editions(d, lambda name: s.line if (s := cr.SHEETS.get(name)) else None))
+
+
+def _ntes_editions(d: Path) -> dict[str, str]:
+    return editions.meta(editions.line_editions(d, lambda name: ntes.line_of(Path(name).stem), "*.html"))
 
 
 def _drop_cross_railway_copies(wr_trains: list[Train], cr_by_line: dict[str, list[Train]],
@@ -107,7 +119,7 @@ def cmd_wr(args: argparse.Namespace) -> int:
     previous = wr.parse_dir(Path(args.previous), Diagnostics()) if args.previous else None
     sources = _sources(pdf_dir)
     return _finish(args, {"WR": trains}, diag, previous,
-                   {"wr_source_dir": str(pdf_dir), "wr_sources": json.dumps(sources)})
+                   {"wr_source_dir": str(pdf_dir), "wr_sources": json.dumps(sources), **_wr_editions(pdf_dir)})
 
 
 def cmd_cr(args: argparse.Namespace) -> int:
@@ -116,7 +128,8 @@ def cmd_cr(args: argparse.Namespace) -> int:
     by_line = cr.parse_dir(pdf_dir, diag)
     previous = _flat(cr.parse_dir(Path(args.previous), Diagnostics())) if args.previous else None
     return _finish(args, by_line, diag, previous,
-                   {"cr_source_dir": str(pdf_dir), "cr_sources": json.dumps(_sources(pdf_dir))})
+                   {"cr_source_dir": str(pdf_dir), "cr_sources": json.dumps(_sources(pdf_dir)),
+                    **_cr_editions(pdf_dir)})
 
 
 def cmd_ntes_fetch(args: argparse.Namespace) -> int:
@@ -131,7 +144,8 @@ def cmd_ntes(args: argparse.Namespace) -> int:
     by_line = ntes.parse_dir(raw, diag)
     previous = _flat(ntes.parse_dir(Path(args.previous), Diagnostics())) if args.previous else None
     return _finish(args, by_line, diag, previous,
-                   {"ntes_source_dir": str(raw), "ntes_sources": json.dumps(ntes.sources(raw))})
+                   {"ntes_source_dir": str(raw), "ntes_sources": json.dumps(ntes.sources(raw)),
+                    **_ntes_editions(raw)})
 
 
 def cmd_build(args: argparse.Namespace) -> int:
@@ -148,9 +162,11 @@ def cmd_build(args: argparse.Namespace) -> int:
             (_flat(cr.parse_dir(Path(args.previous_cr), Diagnostics())) if args.previous_cr else _flat(cr_by_line)) + \
             (_flat(ntes.parse_dir(Path(args.previous_ntes), Diagnostics())) if args.previous_ntes else _flat(ntes_by_line))
     meta = {"wr_source_dir": str(wr_dir), "wr_sources": json.dumps(_sources(wr_dir)),
-            "cr_source_dir": str(cr_dir), "cr_sources": json.dumps(_sources(cr_dir))}
+            "cr_source_dir": str(cr_dir), "cr_sources": json.dumps(_sources(cr_dir)),
+            **_wr_editions(wr_dir), **_cr_editions(cr_dir)}
     if ntes_dir:
-        meta |= {"ntes_source_dir": str(ntes_dir), "ntes_sources": json.dumps(ntes.sources(ntes_dir))}
+        meta |= {"ntes_source_dir": str(ntes_dir), "ntes_sources": json.dumps(ntes.sources(ntes_dir)),
+                 **_ntes_editions(ntes_dir)}
     return _finish(args, by_line, diag, previous, meta)
 
 

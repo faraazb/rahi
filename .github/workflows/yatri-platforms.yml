@@ -182,7 +182,8 @@ jobs:
           {
             echo "Timetable database for the app, built from:"
             echo
-            jq -r '.lines[] | "- \(.name): w.e.f. \(.effective_from // "unknown")"' "$DIR/manifest.json"
+            jq -r '.lines[] | "- \(.name): " + (if .effective_from then "w.e.f. \(.effective_from)"
+              elif .as_of then "as of \(.as_of) (no w.e.f. printed)" else "date unknown" end)' "$DIR/manifest.json"
             echo
             jq -r '"\(.counts.trains) trains, \(.counts.stations) line stations, schema v\(.schema_version)."' "$DIR/manifest.json"
             if [ "$MERGED" = true ]; then

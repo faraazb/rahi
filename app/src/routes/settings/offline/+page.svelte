@@ -65,7 +65,11 @@
 						<span class="text">
 							<span class="label">{l.name} line</span>
 							<span class="sub">
-								{l.effective_from ? `Timetable in force from ${longDate(l.effective_from)}` : 'Effective date not recorded'} · {Object.keys(l.sources).length} official PDFs
+								{l.effective_from
+									? `Timetable in force from ${longDate(l.effective_from)}`
+									: l.as_of
+										? `Timetable as of ${longDate(l.as_of)}`
+										: 'Effective date not recorded'} · {Object.keys(l.sources).length} official source files
 							</span>
 						</span>
 					</div>

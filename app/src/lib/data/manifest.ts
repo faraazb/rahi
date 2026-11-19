@@ -5,7 +5,15 @@ export interface Manifest {
 	schema_version: number;
 	published_at: string;
 	built_at: string | null;
-	lines: { code: string; name: string; effective_from: string | null; sources: Record<string, string> }[];
+	lines: {
+		code: string;
+		name: string;
+		/** w.e.f. printed on the railway's timetable, when it prints one. */
+		effective_from: string | null;
+		/** When the source files were taken (newer releases only). */
+		as_of?: string | null;
+		sources: Record<string, string>;
+	}[];
 	counts: { trains: number; stations: number };
 	/** Optional tables inside the database, e.g. platforms (local builds only). */
 	layers?: Record<string, { source: string | null; local_only: boolean }>;
