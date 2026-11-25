@@ -41,7 +41,7 @@
 			<a class="tr" role="row" href={href.train(trip.trainId, from, to)}>
 				<span class="time num" role="cell">{t(trip.dep)}</span>
 				<span class="leaves num" class:first={i === 0} role="cell">{leaves(trip)}</span>
-				<span class="train" role="cell"><KindTag fast={trip.fast} ac={trip.ac} /><span class="dest">{trip.dest}</span>{#if trip.ret}<ReturnChip ret={trip.ret} {nowMinute} />{/if}</span>
+				<span class="train" role="cell"><KindTag fast={trip.fast} ac={trip.ac} /><span class="dest">{trip.dest}</span>{#if trip.ret}<ReturnChip ret={trip.ret} {nowMinute} {from} />{/if}</span>
 				<span class="dim num" role="cell">{trip.minutes} min</span>
 				{#if showPf}<span role="cell">{#if trip.pf}<span class="pfbox num" aria-label="Platform {pfLabel(trip.pf)}">{pfLabel(trip.pf)}</span>{/if}</span>{/if}
 				<span role="cell"><span class="arr num">{t(trip.arr)}</span></span>
@@ -71,7 +71,7 @@
 							<span aria-hidden="true">·</span><span class="dest">{trip.dest}</span>
 						{/if}
 					</span>
-					{#if trip.ret}<ReturnChip ret={trip.ret} {nowMinute} />{/if}
+					{#if trip.ret}<ReturnChip ret={trip.ret} {nowMinute} {from} />{/if}
 				</span>
 				<span class="arr num" title="Scheduled arrival">arr {t(trip.arr)}</span>
 			</a>

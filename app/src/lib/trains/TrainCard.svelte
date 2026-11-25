@@ -44,7 +44,7 @@
 		<span class="dest">{trip.dest}</span>
 		{#if trip.cars}<span aria-hidden="true">·</span><span>{trip.cars} car</span>{/if}
 		{#if trip.pf}<span aria-hidden="true">·</span><span class="pf num">PF {pfLabel(trip.pf)}</span>{/if}
-		{#if trip.ret && state !== 'departed'}<ReturnChip ret={trip.ret} {nowMinute} />{/if}
+		{#if trip.ret && state !== 'departed'}<ReturnChip ret={trip.ret} {nowMinute} {from} />{/if}
 	</div>
 	<div class="foot">
 		<span class="status">
