@@ -9,8 +9,8 @@
 #   - by hand (Actions -> Yatri platforms -> Run workflow).
 #
 # Whether Yatri's layers go into the release is decided by the variable
-# MERGE_YATRI_PLATFORMS in the "Act" environment (Settings -> Environments -> Act
-# -> Environment variables). Yatri's data may not be redistributed until CDP
+# MERGE_YATRI_PLATFORMS in the "timetable-build" environment (Settings ->
+# Environments -> timetable-build -> Environment variables). Yatri's data may not be redistributed until CDP
 # India / Central Railway agree, so:
 #   - unset or anything but "true": the release holds official data only. Yatri
 #     is still fetched and matched, but only aggregate counts leave the runner
@@ -25,7 +25,8 @@
 # release already holds the same data (manifest data_sha256). Serving it to
 # phones from GitHub Pages is publish.yml's job.
 #
-# Google Play login, from secrets in the "Act" environment (see pipeline/tools/yatri_fetch.py):
+# Google Play login, from secrets in the "timetable-build" environment, which only
+# main and watch/* may use (see pipeline/tools/yatri_fetch.py):
 #   GOOGLE_EMAIL + GOOGLE_AAS_TOKEN        your own account (also read as EMAIL + AAS_TOKEN), or
 #   DISPENSER_URL + DISPENSER_USER_AGENT   a token dispenser such as Aurora's.
 # GitHub runners share datacenter IPs, so Google Play and dispensers rate-limit
@@ -70,7 +71,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment: Act # Google Play secrets and the MERGE_YATRI_PLATFORMS switch
+    environment: timetable-build # Google Play secrets and the MERGE_YATRI_PLATFORMS switch (main, watch/* only)
     timeout-minutes: 45
     concurrency:
       group: yatri-platforms-${{ github.ref }}

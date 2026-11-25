@@ -42,6 +42,13 @@ watch/watch.py <railway>      fetch index pages (primary host, then old* mirror)
   folder). Daily reruns therefore keep the same folder name.
 - Files are keyed by URL path, so a switch between `wr.` and `oldwr.` is not reported as a change.
 
+## Relay
+
+The railway sites do not answer GitHub's runners, so in CI every request goes through
+`relay/` (a Vercel function in Mumbai, protected by a shared secret): `WATCH_RELAY_URL`
+(repository variable) and `WATCH_RELAY_SECRET` (repository secret). Locally, leave them unset
+to fetch directly.
+
 ## Files
 
 | File | Purpose |

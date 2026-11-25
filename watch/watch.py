@@ -48,20 +48,49 @@ ATTEMPTS = 3
 
 # --------------------------------------------------------------------------- http
 
+class RelayError(RuntimeError):
+    """The relay itself refused or failed (not a railway response)."""
+
+
+def _relayed(url: str, headers: dict) -> tuple[str, dict]:
+    """Route through the relay (relay/) when WATCH_RELAY_URL is set: GitHub's
+    runners cannot reach the railway sites, a function in Mumbai can."""
+    relay = os.environ.get("WATCH_RELAY_URL", "").strip()
+    if not relay:
+        return url, headers
+    return (f"{relay}?url={urllib.parse.quote(url, safe='')}",
+            {**headers, "X-Relay-Secret": os.environ.get("WATCH_RELAY_SECRET", "").strip()})
+
+
+def _response_headers(h) -> dict:
+    """Lower-cased headers; through the relay, the railway's are x-upstream-<name>."""
+    out = {k.lower(): v for k, v in h.items()}
+    if "x-relay-error" in out:
+        raise RelayError(f"relay: {out['x-relay-error']}")
+    for k, v in list(out.items()):
+        if k.startswith("x-upstream-"):
+            out[k.removeprefix("x-upstream-")] = v
+    return out
+
+
 def _request(url: str, method: str = "GET") -> tuple[int, dict, bytes]:
     """Return (status, headers, body). Retries network errors and 5xx."""
     last: Exception | None = None
     for attempt in range(ATTEMPTS):
         if attempt:
             time.sleep(5 * attempt)
-        req = urllib.request.Request(url, method=method, headers={"User-Agent": UA})
+        target, headers = _relayed(url, {"User-Agent": UA})
+        req = urllib.request.Request(target, method=method, headers=headers)
         try:
             with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
                 body = r.read() if method == "GET" else b""
-                return r.status, {k.lower(): v for k, v in r.headers.items()}, body
+                return r.status, _response_headers(r.headers), body
         except urllib.error.HTTPError as e:
+            h = {k.lower(): v for k, v in e.headers.items()}
+            if "x-relay-error" in h and e.code in (400, 401):
+                raise RelayError(f"relay: {h['x-relay-error']} (HTTP {e.code}); check WATCH_RELAY_URL/SECRET")
             if e.code < 500:
-                return e.code, {k.lower(): v for k, v in e.headers.items()}, b""
+                return e.code, _response_headers(e.headers), b""
             last = e
         except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as e:
             last = e

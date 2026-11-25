@@ -62,7 +62,7 @@ the current version with apkeep (pinned in `mise.toml`), and extracts
 In CI, `.github/workflows/yatri-platforms.yml` builds the database from the newest snapshots, tries the
 same Yatri steps, and uploads a release as a workflow artifact. The timetable watcher starts it on its
 `watch/<railway>` branch whenever it pushes a new snapshot; it can also be run by hand. It reads the
-Google Play secrets and the switch `MERGE_YATRI_PLATFORMS` from the `Act` environment: only when the
+Google Play secrets and the switch `MERGE_YATRI_PLATFORMS` from the `timetable-build` environment (usable from `main` and `watch/*` only): only when the
 switch is `true` does the release carry the platform and rake tables (`mumbailocal release
 --merge-layers`). Otherwise the release is official data only and Yatri's tables stay on the runner.
 A Yatri failure never blocks the official release.

@@ -6,7 +6,7 @@
 #   data   when the timetable inputs changed (data/, pipeline/src/, mise.toml) or
 #          on a manual run: build with yatri-platforms.yml (publish: true), which
 #          creates a GitHub Release marked latest unless the latest release
-#          already holds the same data. MERGE_YATRI_PLATFORMS (Act environment)
+#          already holds the same data. MERGE_YATRI_PLATFORMS (timetable-build environment)
 #          still decides whether Yatri's layers are in it.
 #   pages  builds the app (app/) and deploys it to GitHub Pages with data/ rebuilt
 #          from the GitHub Releases (Pages keeps nothing between deploys): the

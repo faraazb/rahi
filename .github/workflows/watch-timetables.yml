@@ -38,6 +38,10 @@ jobs:
       - name: Check ${{ matrix.railway }} pages
         env:
           FORGET: ${{ inputs.forget }}
+          # The railway sites do not answer GitHub's runners; fetch through relay/
+          # (a Vercel function in Mumbai). Unset = fetch directly.
+          WATCH_RELAY_URL: ${{ vars.WATCH_RELAY_URL }}
+          WATCH_RELAY_SECRET: ${{ secrets.WATCH_RELAY_SECRET }}
         run: python3 watch/watch.py "${{ matrix.railway }}" --out "$RUNNER_TEMP/out" --forget "$FORGET"
 
       - name: Open or update PR / issue
