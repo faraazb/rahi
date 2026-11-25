@@ -22,7 +22,7 @@ data/           inputs shared by pipeline and app
   raw/<line>/<date>/ official timetable PDFs, one folder per release
   stations/          curated station tables per line (codes, aliases, branch graph)
   ref/               reference lists (NTES station codes)
-docs/           research (OVERVIEW.md) and source discrepancies (observations.md)
+docs/           source discrepancies (observations.md)
 temp.fignore/   local-only, never committed: APKs, decompiled sources, reference DBs, tools
 ```
 
@@ -43,8 +43,7 @@ mise run testbench                             # browse the parsed DB at http://
 ## Platforms (from Yatri, off by default)
 
 No official source publishes platform numbers. Local builds can add them from the database bundled
-in the Yatri app; releases carry them only when `MERGE_YATRI_PLATFORMS` is turned on, which waits
-until redistribution is agreed.
+in the Yatri app; releases carry them only when `MERGE_YATRI_PLATFORMS` is turned on.
 
 ```sh
 mise run yatri -- --apk temp.fignore/apks/yatri/base.apk   # extract from an APK you have, or
