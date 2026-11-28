@@ -59,14 +59,23 @@ def test_default_tag_names_content(db_path, tmp_path):
     sqlite3.connect(f"file:{db_path}?mode=ro", uri=True).execute("SELECT 1 FROM meta").fetchone()
 
 
-def test_data_hash_ignores_build_time(db_path, tmp_path):
+def test_data_hash_ignores_build_and_fetch_time(db_path, tmp_path):
     import shutil
     copy = tmp_path / "rebuilt.sqlite"
     shutil.copy(db_path, copy)
     with sqlite3.connect(copy) as db:
         db.execute("UPDATE meta SET value = '1999-01-01T00:00:00+00:00' WHERE key = 'built_at'")
+        db.execute("INSERT OR REPLACE INTO meta(key, value) VALUES ('platforms_fetched_at', '1999-01-01T00:00:00+00:00')")
     a = json.loads((make_release(db_path, tmp_path / "a") / "manifest.json").read_text())
     b = json.loads((make_release(copy, tmp_path / "b") / "manifest.json").read_text())
     assert a["db"]["raw_sha256"] != b["db"]["raw_sha256"]
     assert a["data_sha256"] == b["data_sha256"]
 
+
+
+def test_data_hash_of_release_asset_matches_manifest(db_path, tmp_path):
+    from mumbailocal.release import data_sha256_of_file
+    rel = make_release(db_path, tmp_path)
+    manifest = json.loads((rel / "manifest.json").read_text())
+    assert data_sha256_of_file(rel / DB_ASSET) == manifest["data_sha256"]
+    assert data_sha256_of_file(db_path) == manifest["data_sha256"]

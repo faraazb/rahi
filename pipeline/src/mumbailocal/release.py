@@ -38,15 +38,34 @@ class LocalOnlyData(Exception):
     pass
 
 
+# meta rows that record when a build ran rather than what it holds.
+VOLATILE_META = ("built_at", "platforms_fetched_at")
+_VOLATILE_ROWS = tuple(f"INSERT INTO \"meta\" VALUES('{key}'," for key in VOLATILE_META)
+
+
 def data_sha256(db: sqlite3.Connection) -> str:
-    """Hash of the database's content without its build time, so rebuilding the
-    same sources gives the same value and publishing can skip unchanged data."""
+    """Hash of the database's content without its build and fetch times, so
+    rebuilding the same sources gives the same value and publishing can skip
+    unchanged data."""
     h = hashlib.sha256()
     for line in db.iterdump():
-        if not line.startswith("INSERT INTO \"meta\" VALUES('built_at',"):
+        if not line.startswith(_VOLATILE_ROWS):
             h.update(line.encode())
             h.update(b"\n")
     return h.hexdigest()
+
+
+def data_sha256_of_file(path: Path) -> str:
+    """data_sha256 of a database file, gzipped (a release asset) or not."""
+    raw = path.read_bytes()
+    if raw[:2] == b"\x1f\x8b":
+        raw = gzip.decompress(raw)
+    db = sqlite3.connect(":memory:")
+    db.deserialize(raw)
+    try:
+        return data_sha256(db)
+    finally:
+        db.close()
 
 
 def _effective_from(meta: dict[str, str], line: str) -> str | None:
@@ -133,3 +152,11 @@ def make_release(db_path: Path, out_dir: Path, tag: str | None = None, local: bo
     }
     (rel / "manifest.json").write_text(json.dumps(manifest, indent=1))
     return rel
+
+
+if __name__ == "__main__":
+    # python -m mumbailocal.release data-sha256 <db.sqlite[.gz]>
+    import sys
+    if len(sys.argv) != 3 or sys.argv[1] != "data-sha256":
+        sys.exit("usage: python -m mumbailocal.release data-sha256 <db.sqlite[.gz]>")
+    print(data_sha256_of_file(Path(sys.argv[2])))

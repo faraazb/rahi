@@ -22,7 +22,7 @@
 #
 # The release folder is always uploaded as a workflow artifact. With publish
 # (main only) it also becomes a GitHub Release marked latest, unless the latest
-# release already holds the same data (manifest data_sha256). Serving it to
+# release already holds the same data (data_sha256 of its database). Serving it to
 # phones from GitHub Pages is publish.yml's job.
 #
 # Google Play login, from secrets in the "timetable-build" environment, which only
@@ -173,7 +173,11 @@ jobs:
           new=$(jq -r .data_sha256 "$DIR/manifest.json")
           latest=$(gh release view --json tagName --jq .tagName 2>/dev/null || true)
           if [ -n "$latest" ]; then
-            old=$(gh release download "$latest" --pattern manifest.json --output - | jq -r '.data_sha256 // empty')
+            # Hash the latest release's database again rather than trusting its manifest,
+            # so a change to what data_sha256 leaves out cannot publish the same data twice.
+            gh release download "$latest" --pattern mumbai-local.sqlite.gz --dir "$RUNNER_TEMP/latest"
+            old=$(uv run --project pipeline python -m mumbailocal.release data-sha256 \
+              "$RUNNER_TEMP/latest/mumbai-local.sqlite.gz")
             if [ "$old" = "$new" ]; then
               echo "The latest release $latest already holds this data; not publishing."
               echo "published=false" >> "$GITHUB_OUTPUT"
