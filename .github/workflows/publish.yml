@@ -108,7 +108,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: jdx/mise-action@v2
+      - uses: jdx/mise-action@v5
         with:
           install: true
           cache: true
@@ -141,9 +141,9 @@ jobs:
             --latest "$latest" --repo "$GH_REPO")
           echo "Timetable on Pages: $pointers" | tee -a "$GITHUB_STEP_SUMMARY"
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: app/build
 
       - id: deploy
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

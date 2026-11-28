@@ -85,7 +85,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: jdx/mise-action@v2
+      - uses: jdx/mise-action@v5
         with:
           install: true
           cache: true # tool binaries only (python, uv, node, apkeep), never data
@@ -154,7 +154,7 @@ jobs:
           echo "merged=$merged" >> "$GITHUB_OUTPUT"
 
       - name: Upload the release
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.release.outputs.tag }}
           path: ${{ steps.release.outputs.dir }}
